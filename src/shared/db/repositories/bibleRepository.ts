@@ -134,11 +134,11 @@ export class BibleRepository implements IBibleRepository {
   ): Promise<number> {
     if (verses.length === 0) return 0;
 
+    let insertedCount = 0;
     // Use withTransactionAsync for high performance
-    return this.db.withTransactionAsync(async () => {
-      // Insert in chunks of 500 to stay well under SQLite parameter limits
+    await this.db.withTransactionAsync(async () => {
+      // Insert in chunks of 250 to stay well under SQLite parameter limits
       const chunkSize = 250;
-      let insertedCount = 0;
 
       for (let i = 0; i < verses.length; i += chunkSize) {
         const chunk = verses.slice(i, i + chunkSize);
@@ -158,8 +158,9 @@ export class BibleRepository implements IBibleRepository {
       }
 
       await this.markTranslationDownloaded(translationId);
-      return insertedCount;
     });
+
+    return insertedCount;
   }
 
   async getVerseCount(translationId: string): Promise<number> {

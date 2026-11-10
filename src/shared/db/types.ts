@@ -3,7 +3,7 @@ export interface ISqliteDb {
   runAsync(sql: string, ...params: unknown[]): Promise<{ changes: number; lastInsertRowId: number }>;
   getAllAsync<T>(sql: string, ...params: unknown[]): Promise<T[]>;
   getFirstAsync<T>(sql: string, ...params: unknown[]): Promise<T | null>;
-  withTransactionAsync<T>(task: () => Promise<T>): Promise<T>;
+  withTransactionAsync(task: () => Promise<void>): Promise<void>;
 }
 
 export interface DbTranslation {

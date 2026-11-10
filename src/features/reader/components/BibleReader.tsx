@@ -40,7 +40,7 @@ export function BibleReader() {
   const { data: verses, isLoading } = useChapterVerses();
   const { data: favorites } = useChapterFavorites();
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
 
   const favoritesMap = new Map<number, string | null>();
   if (favorites) {

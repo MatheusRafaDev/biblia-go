@@ -34,7 +34,7 @@ export default function TabLayout() {
           title: 'Ler',
           tabBarAccessibilityLabel: 'Aba Leitor da Bíblia',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'book' : 'book-outline'} size={size} color={color} />
+            <Ionicons name={focused ? 'book' : 'book-outline'} size={size} color={String(color)} />
           ),
         }}
       />
@@ -44,7 +44,7 @@ export default function TabLayout() {
           title: 'Comparar',
           tabBarAccessibilityLabel: 'Aba Comparador de Traduções',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'git-compare' : 'git-compare-outline'} size={size} color={color} />
+            <Ionicons name={focused ? 'git-compare' : 'git-compare-outline'} size={size} color={String(color)} />
           ),
         }}
       />
@@ -54,7 +54,7 @@ export default function TabLayout() {
           title: 'Plano',
           tabBarAccessibilityLabel: 'Aba Plano de Leitura',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={String(color)} />
           ),
         }}
       />
@@ -64,7 +64,7 @@ export default function TabLayout() {
           title: 'Quiz',
           tabBarAccessibilityLabel: 'Aba Quiz Bíblico',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'help-circle' : 'help-circle-outline'} size={size} color={color} />
+            <Ionicons name={focused ? 'help-circle' : 'help-circle-outline'} size={size} color={String(color)} />
           ),
         }}
       />
@@ -74,7 +74,7 @@ export default function TabLayout() {
           title: 'Personagens',
           tabBarAccessibilityLabel: 'Aba Grafo de Personagens e Genealogias',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'people' : 'people-outline'} size={size} color={color} />
+            <Ionicons name={focused ? 'people' : 'people-outline'} size={size} color={String(color)} />
           ),
         }}
       />
