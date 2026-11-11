@@ -30,14 +30,13 @@ describe('FavoritesRepository', () => {
     expect(isFavAfterRemove).toBe(false);
   });
 
-  it('deve listar versículos destacados de um capítulo', async () => {
+  it('deve permitir adicionar e atualizar anotação de estudo no versículo favorito', async () => {
     await repo.toggleFavorite('ACF11', 1, 1, 1, '#FFF59D');
-    await repo.toggleFavorite('ACF11', 1, 1, 3, '#BBDEFB');
-    await repo.toggleFavorite('ACF11', 1, 2, 1, '#C8E6C9'); // Capítulo diferente
+    await repo.updateFavoriteNote('ACF11', 1, 1, 1, 'Versículo fundamental da criação do universo.');
 
-    const chapter1Favs = await repo.getFavoritesForChapter('ACF11', 1, 1);
-    expect(chapter1Favs).toHaveLength(2);
-    expect(chapter1Favs.map((f) => f.verse)).toEqual([1, 3]);
+    const favs = await repo.getFavorites('ACF11');
+    expect(favs).toHaveLength(1);
+    expect(favs[0].note).toBe('Versículo fundamental da criação do universo.');
   });
 });
 

@@ -19,6 +19,7 @@ import { VerseItem } from './VerseItem';
 import { BookSelectorModal } from './BookSelectorModal';
 import { SearchModal } from './SearchModal';
 import { TranslationPickerModal } from './TranslationPickerModal';
+import { FavoritesModal } from './FavoritesModal';
 import { TranslationBanner } from './TranslationBanner';
 import { LoadingState, EmptyState } from '@/src/shared/components/FeedbackStates';
 
@@ -38,6 +39,7 @@ export function BibleReader() {
   const [bookModalVisible, setBookModalVisible] = useState(false);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [translationModalVisible, setTranslationModalVisible] = useState(false);
+  const [favoritesModalVisible, setFavoritesModalVisible] = useState(false);
   const currentTranslation = useReaderStore((s) => s.currentTranslation);
 
   const { data: verses, isLoading } = useChapterVerses();
@@ -117,6 +119,15 @@ export function BibleReader() {
 
         {/* Action icons */}
         <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setFavoritesModalVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Ver versículos destacados e favoritos"
+          >
+            <Ionicons name="bookmark-outline" size={22} color={theme.colors.text} />
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => setSearchModalVisible(true)}
@@ -240,6 +251,11 @@ export function BibleReader() {
       <TranslationPickerModal
         visible={translationModalVisible}
         onClose={() => setTranslationModalVisible(false)}
+      />
+
+      <FavoritesModal
+        visible={favoritesModalVisible}
+        onClose={() => setFavoritesModalVisible(false)}
       />
     </SafeAreaView>
   );

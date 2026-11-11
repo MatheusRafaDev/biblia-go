@@ -20,6 +20,13 @@ export interface IFavoritesRepository {
     bookId: number,
     chapter: number
   ): Promise<DbFavorite[]>;
+  updateFavoriteNote(
+    translationId: string,
+    bookId: number,
+    chapter: number,
+    verse: number,
+    note: string
+  ): Promise<void>;
   removeFavorite(id: number): Promise<void>;
 }
 
@@ -106,5 +113,23 @@ export class FavoritesRepository implements IFavoritesRepository {
 
   async removeFavorite(id: number): Promise<void> {
     await this.db.runAsync(`DELETE FROM favorites WHERE id = ?;`, id);
+  }
+
+  async updateFavoriteNote(
+    translationId: string,
+    bookId: number,
+    chapter: number,
+    verse: number,
+    note: string
+  ): Promise<void> {
+    await this.db.runAsync(
+      `UPDATE favorites SET note = ? 
+       WHERE translation_id = ? AND book_id = ? AND chapter = ? AND verse = ?;`,
+      note,
+      translationId,
+      bookId,
+      chapter,
+      verse
+    );
   }
 }

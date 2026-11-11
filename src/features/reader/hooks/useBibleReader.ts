@@ -64,6 +64,42 @@ export function useToggleFavorite() {
   });
 }
 
+export function useAllFavorites() {
+  const favRepo = useFavoritesRepository();
+  const currentTranslation = useReaderStore((s) => s.currentTranslation);
+
+  return useQuery({
+    queryKey: ['all-favorites', currentTranslation],
+    queryFn: () => favRepo.getFavorites(currentTranslation),
+  });
+}
+
+export function useUpdateFavoriteNote() {
+  const favRepo = useFavoritesRepository();
+  const queryClient = useQueryClient();
+  const currentTranslation = useReaderStore((s) => s.currentTranslation);
+
+  return useMutation({
+    mutationFn: async ({
+      bookId,
+      chapter,
+      verse,
+      note,
+    }: {
+      bookId: number;
+      chapter: number;
+      verse: number;
+      note: string;
+    }) => {
+      return favRepo.updateFavoriteNote(currentTranslation, bookId, chapter, verse, note);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['chapter-favorites'] });
+    },
+  });
+}
+
 export function useVerseSearch(query: string) {
   const repo = useBibleRepository();
   const currentTranslation = useReaderStore((s) => s.currentTranslation);

@@ -97,6 +97,21 @@ export class MockSqliteDb implements ISqliteDb {
       return { changes: 1, lastInsertRowId: newFav.id };
     }
 
+    if (s.startsWith('UPDATE favorites SET note = ?')) {
+      const [note, translation_id, book_id, chapter, verse] = params as [string, string, number, number, number];
+      const fav = this.favorites.find(
+        (f) =>
+          f.translation_id === translation_id &&
+          f.book_id === book_id &&
+          f.chapter === chapter &&
+          f.verse === verse
+      );
+      if (fav) {
+        fav.note = note;
+      }
+      return { changes: fav ? 1 : 0, lastInsertRowId: 0 };
+    }
+
     if (s.startsWith('DELETE FROM favorites WHERE translation_id')) {
       const [translation_id, book_id, chapter, verse] = params as [string, number, number, number];
       const initial = this.favorites.length;
