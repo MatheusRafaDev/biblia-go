@@ -4,11 +4,13 @@ import { ISqliteDb } from './types';
 import { runMigrations } from './migrations';
 import { BibleRepository, IBibleRepository } from './repositories/bibleRepository';
 import { FavoritesRepository, IFavoritesRepository } from './repositories/favoritesRepository';
+import { ReadingPlanRepository, IReadingPlanRepository } from './repositories/readingPlanRepository';
 
 interface DatabaseContextValue {
   db: ISqliteDb | null;
   bibleRepository: IBibleRepository | null;
   favoritesRepository: IFavoritesRepository | null;
+  readingPlanRepository: IReadingPlanRepository | null;
   isReady: boolean;
   error: Error | null;
 }
@@ -17,6 +19,7 @@ const DatabaseContext = createContext<DatabaseContextValue>({
   db: null,
   bibleRepository: null,
   favoritesRepository: null,
+  readingPlanRepository: null,
   isReady: false,
   error: null,
 });
@@ -27,6 +30,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   const [db, setDb] = useState<ISqliteDb | null>(null);
   const [bibleRepository, setBibleRepository] = useState<IBibleRepository | null>(null);
   const [favoritesRepository, setFavoritesRepository] = useState<IFavoritesRepository | null>(null);
+  const [readingPlanRepository, setReadingPlanRepository] = useState<IReadingPlanRepository | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -41,9 +45,13 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
         if (isMounted) {
           const bRepo = new BibleRepository(sqliteDb);
           const fRepo = new FavoritesRepository(sqliteDb);
+          const pRepo = new ReadingPlanRepository(sqliteDb);
+          await pRepo.ensurePlansSeeded();
+
           setDb(sqliteDb);
           setBibleRepository(bRepo);
           setFavoritesRepository(fRepo);
+          setReadingPlanRepository(pRepo);
           setIsReady(true);
         }
       } catch (err) {
@@ -66,6 +74,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
         db,
         bibleRepository,
         favoritesRepository,
+        readingPlanRepository,
         isReady,
         error,
       }}
@@ -97,4 +106,12 @@ export function useFavoritesRepository(): IFavoritesRepository {
     throw new Error('FavoritesRepository not ready. Database is still initializing.');
   }
   return favoritesRepository;
+}
+
+export function useReadingPlanRepository(): IReadingPlanRepository {
+  const { readingPlanRepository, isReady } = useDatabase();
+  if (!isReady || !readingPlanRepository) {
+    throw new Error('ReadingPlanRepository not ready. Database is still initializing.');
+  }
+  return readingPlanRepository;
 }

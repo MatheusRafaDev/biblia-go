@@ -75,3 +75,4 @@ export function computeWordDiff(
     compareTokens: revCompare.reverse(),
   };
 }
+
