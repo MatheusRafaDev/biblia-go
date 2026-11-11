@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useAppTheme } from '@/src/shared/hooks/useTheme';
 import { useReaderStore } from '@/src/shared/stores/useReaderStore';
-import { useToggleFavorite } from '../hooks/useBibleReader';
+import { useCurrentBook, useToggleFavorite } from '../hooks/useBibleReader';
 
 interface VerseItemProps {
   verseNumber: number;
@@ -29,6 +30,10 @@ export function VerseItem({
 }: VerseItemProps) {
   const theme = useAppTheme();
   const fontSize = useReaderStore((s) => s.fontSize);
+  const currentChapter = useReaderStore((s) => s.currentChapter);
+  const currentTranslation = useReaderStore((s) => s.currentTranslation);
+  const currentBook = useCurrentBook();
+
   const toggleFavoriteMutation = useToggleFavorite();
   const [showActions, setShowActions] = useState(false);
 
@@ -43,6 +48,29 @@ export function VerseItem({
     setShowActions((prev) => !prev);
   };
 
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `"${text}" — ${currentBook.name} ${currentChapter}:${verseNumber} (${currentTranslation})`,
+      });
+    } catch {
+      // Ignore
+    }
+    setShowActions(false);
+  };
+
+  const handleCompare = () => {
+    setShowActions(false);
+    router.push({
+      pathname: '/(tabs)/compare',
+      params: {
+        bookId: String(currentBook.id),
+        chapter: String(currentChapter),
+        verse: String(verseNumber),
+      },
+    });
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -50,7 +78,7 @@ export function VerseItem({
         onPress={handleToggle}
         accessibilityRole="button"
         accessibilityLabel={`Versículo ${verseNumber}: ${text}`}
-        accessibilityHint="Toque para destacar ou marcar como favorito"
+        accessibilityHint="Toque para destacar, copiar ou comparar traduções"
         style={[
           styles.verseRow,
           activeColor && !theme.isDark && { backgroundColor: activeColor + '80' },
@@ -99,41 +127,70 @@ export function VerseItem({
             },
           ]}
         >
-          <Text
-            style={[
-              styles.actionsLabel,
-              { color: theme.colors.textMuted, fontFamily: 'Nunito_600SemiBold' },
-            ]}
-          >
-            Destacar v.{verseNumber}:
-          </Text>
-          <View style={styles.colorsRow}>
-            {HIGHLIGHT_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.color}
-                style={[
-                  styles.colorDot,
-                  { backgroundColor: opt.color },
-                  activeColor === opt.color && styles.colorDotActive,
-                ]}
-                onPress={() => handleColorSelect(opt.color)}
-                accessibilityLabel={`Destacar com cor ${opt.label}`}
-                accessibilityRole="button"
-              />
-            ))}
-            {isFavorited && (
-              <TouchableOpacity
-                style={styles.removeHighlightButton}
-                onPress={() => {
-                  toggleFavoriteMutation.mutate({ verse: verseNumber });
-                  setShowActions(false);
-                }}
-                accessibilityLabel="Remover destaque"
-                accessibilityRole="button"
-              >
-                <Ionicons name="trash-outline" size={18} color={theme.colors.textMuted} />
-              </TouchableOpacity>
-            )}
+          <View style={styles.actionsTopRow}>
+            <Text
+              style={[
+                styles.actionsLabel,
+                { color: theme.colors.textMuted, fontFamily: 'Nunito_600SemiBold' },
+              ]}
+            >
+              Destacar v.{verseNumber}:
+            </Text>
+            <View style={styles.colorsRow}>
+              {HIGHLIGHT_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.color}
+                  style={[
+                    styles.colorDot,
+                    { backgroundColor: opt.color },
+                    activeColor === opt.color && styles.colorDotActive,
+                  ]}
+                  onPress={() => handleColorSelect(opt.color)}
+                  accessibilityLabel={`Destacar com cor ${opt.label}`}
+                  accessibilityRole="button"
+                />
+              ))}
+              {isFavorited && (
+                <TouchableOpacity
+                  style={styles.actionIconBtn}
+                  onPress={() => {
+                    toggleFavoriteMutation.mutate({ verse: verseNumber });
+                    setShowActions(false);
+                  }}
+                  accessibilityLabel="Remover destaque"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="trash-outline" size={18} color={theme.colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Additional Quick Actions: Share & Compare */}
+          <View style={styles.actionsBottomRow}>
+            <TouchableOpacity
+              style={[styles.quickButton, { backgroundColor: theme.colors.surfaceMuted }]}
+              onPress={handleShare}
+              accessibilityRole="button"
+              accessibilityLabel="Compartilhar versículo"
+            >
+              <Ionicons name="share-social-outline" size={16} color={theme.colors.text} />
+              <Text style={[styles.quickBtnText, { color: theme.colors.text, fontFamily: 'Nunito_600SemiBold' }]}>
+                Compartilhar
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.quickButton, { backgroundColor: theme.colors.primaryLight }]}
+              onPress={handleCompare}
+              accessibilityRole="button"
+              accessibilityLabel="Comparar versículo em outras versões"
+            >
+              <Ionicons name="git-compare-outline" size={16} color={theme.colors.primary} />
+              <Text style={[styles.quickBtnText, { color: theme.colors.primary, fontFamily: 'Nunito_700Bold' }]}>
+                Comparar
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -162,15 +219,36 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   actionsBar: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 6,
+    marginHorizontal: 8,
+    gap: 10,
+  },
+  actionsTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 4,
-    marginHorizontal: 8,
+  },
+  actionsBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  quickButton: {
+    flex: 1,
+    flexDirection: 'row',
+    minHeight: 44,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+  },
+  quickBtnText: {
+    fontSize: 13,
   },
   actionsLabel: {
     fontSize: 13,
@@ -191,7 +269,7 @@ const styles = StyleSheet.create({
     borderColor: '#3B6EF5',
     transform: [{ scale: 1.15 }],
   },
-  removeHighlightButton: {
+  actionIconBtn: {
     width: 32,
     height: 32,
     alignItems: 'center',
@@ -199,3 +277,4 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 });
+

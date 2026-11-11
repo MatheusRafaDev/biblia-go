@@ -7,6 +7,12 @@ export interface IBibleRepository {
   getBooks(testament?: 'OT' | 'NT'): Promise<DbBook[]>;
   getBookById(id: number): Promise<DbBook | null>;
   getChapterVerses(translationId: string, bookId: number, chapter: number): Promise<DbVerse[]>;
+  getSingleVerse(
+    translationId: string,
+    bookId: number,
+    chapter: number,
+    verse: number
+  ): Promise<DbVerse | null>;
   searchVerses(query: string, translationId?: string, limit?: number): Promise<SearchVerseResult[]>;
   bulkInsertVerses(
     translationId: string,
@@ -74,6 +80,23 @@ export class BibleRepository implements IBibleRepository {
       translationId,
       bookId,
       chapter
+    );
+  }
+
+  async getSingleVerse(
+    translationId: string,
+    bookId: number,
+    chapter: number,
+    verse: number
+  ): Promise<DbVerse | null> {
+    return this.db.getFirstAsync<DbVerse>(
+      `SELECT id, translation_id, book_id, chapter, verse, text 
+       FROM verses 
+       WHERE translation_id = ? AND book_id = ? AND chapter = ? AND verse = ?;`,
+      translationId,
+      bookId,
+      chapter,
+      verse
     );
   }
 

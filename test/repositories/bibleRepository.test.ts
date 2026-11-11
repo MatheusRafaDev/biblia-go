@@ -85,6 +85,11 @@ describe('BibleRepository', () => {
     expect(genesis1).toHaveLength(3);
     expect(genesis1[0].verse).toBe(1);
     expect(genesis1[0].text).toBe('No princípio criou Deus os céus e a terra.');
+
+    const singleVerse = await repo.getSingleVerse('ACF11', 1, 1, 2);
+    expect(singleVerse).toBeDefined();
+    expect(singleVerse?.verse).toBe(2);
+    expect(singleVerse?.text).toBe('E a terra era sem forma e vazia.');
   });
 
   it('deve realizar busca textual por palavras-chave', async () => {

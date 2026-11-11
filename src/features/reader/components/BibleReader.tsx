@@ -18,6 +18,7 @@ import {
 import { VerseItem } from './VerseItem';
 import { BookSelectorModal } from './BookSelectorModal';
 import { SearchModal } from './SearchModal';
+import { TranslationPickerModal } from './TranslationPickerModal';
 import { TranslationBanner } from './TranslationBanner';
 import { LoadingState, EmptyState } from '@/src/shared/components/FeedbackStates';
 
@@ -36,6 +37,8 @@ export function BibleReader() {
 
   const [bookModalVisible, setBookModalVisible] = useState(false);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
+  const [translationModalVisible, setTranslationModalVisible] = useState(false);
+  const currentTranslation = useReaderStore((s) => s.currentTranslation);
 
   const { data: verses, isLoading } = useChapterVerses();
   const { data: favorites } = useChapterFavorites();
@@ -85,18 +88,32 @@ export function BibleReader() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Top Header Bar */}
       <View style={[styles.headerBar, { borderBottomColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
-        {/* Book & Chapter Selector Pill */}
-        <TouchableOpacity
-          style={[styles.selectorPill, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-          onPress={() => setBookModalVisible(true)}
-          accessibilityRole="button"
-          accessibilityLabel={`Selecionar livro e capítulo. Atual: ${currentBook.name} capítulo ${currentChapter}`}
-        >
-          <Text style={[styles.selectorTitle, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
-            {currentBook.name} {currentChapter}
-          </Text>
-          <Ionicons name="chevron-down" size={18} color={theme.colors.primary} />
-        </TouchableOpacity>
+        <View style={styles.selectorsGroup}>
+          {/* Book & Chapter Selector Pill */}
+          <TouchableOpacity
+            style={[styles.selectorPill, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+            onPress={() => setBookModalVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`Selecionar livro e capítulo. Atual: ${currentBook.name} capítulo ${currentChapter}`}
+          >
+            <Text style={[styles.selectorTitle, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+              {currentBook.name} {currentChapter}
+            </Text>
+            <Ionicons name="chevron-down" size={16} color={theme.colors.primary} />
+          </TouchableOpacity>
+
+          {/* Translation Picker Pill */}
+          <TouchableOpacity
+            style={[styles.translationPill, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}
+            onPress={() => setTranslationModalVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`Tradução atual: ${currentTranslation}. Toque para alterar ou baixar outras`}
+          >
+            <Text style={[styles.translationText, { color: theme.colors.primary, fontFamily: 'Nunito_700Bold' }]}>
+              {currentTranslation}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Action icons */}
         <View style={styles.headerActions}>
@@ -219,6 +236,11 @@ export function BibleReader() {
         visible={searchModalVisible}
         onClose={() => setSearchModalVisible(false)}
       />
+
+      <TranslationPickerModal
+        visible={translationModalVisible}
+        onClose={() => setTranslationModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -235,6 +257,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
   },
+  selectorsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   selectorPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -246,6 +273,17 @@ const styles = StyleSheet.create({
   },
   selectorTitle: {
     fontSize: 16,
+  },
+  translationPill: {
+    paddingHorizontal: 12,
+    minHeight: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  translationText: {
+    fontSize: 13,
   },
   headerActions: {
     flexDirection: 'row',

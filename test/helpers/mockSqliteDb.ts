@@ -191,6 +191,18 @@ export class MockSqliteDb implements ISqliteDb {
   async getFirstAsync<T>(sql: string, ...params: unknown[]): Promise<T | null> {
     const s = sql.replace(/\s+/g, ' ').trim();
 
+    if (s.includes('FROM verses WHERE translation_id = ? AND book_id = ? AND chapter = ? AND verse = ?')) {
+      const [translation_id, book_id, chapter, verse] = params as [string, number, number, number];
+      const match = this.verses.find(
+        (v) =>
+          v.translation_id === translation_id &&
+          v.book_id === book_id &&
+          v.chapter === chapter &&
+          v.verse === verse
+      );
+      return (match ?? null) as unknown as T;
+    }
+
     if (s.includes('SELECT is_downloaded FROM translations WHERE id = ?')) {
       const [id] = params as [string];
       const t = this.translations.get(id);
