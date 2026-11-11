@@ -76,3 +76,4 @@ export class QuizRepository implements IQuizRepository {
     await this.db.runAsync(`DELETE FROM quiz_progress;`);
   }
 }
+

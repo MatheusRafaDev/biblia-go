@@ -114,3 +114,4 @@ export const DEFAULT_PLANS: PlanDefinition[] = [
     readings: generateBible365Days(),
   },
 ];
+

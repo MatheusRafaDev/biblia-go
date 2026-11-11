@@ -148,3 +148,4 @@ export class ReadingPlanRepository implements IReadingPlanRepository {
     return nextState === 1;
   }
 }
+

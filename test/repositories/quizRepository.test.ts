@@ -47,3 +47,4 @@ describe('QuizRepository', () => {
     expect(history).toHaveLength(0);
   });
 });
+

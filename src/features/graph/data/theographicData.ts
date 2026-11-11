@@ -254,3 +254,4 @@ export const THEOGRAPHIC_EDGES: CharacterEdge[] = [
   { id: 'e8', source: 'davi', target: 'salomao', relationship: 'pai_de', label: 'Pai de' },
   { id: 'e9', source: 'salomao', target: 'jesus', relationship: 'pai_de', label: 'Genealogia até' },
 ];
+

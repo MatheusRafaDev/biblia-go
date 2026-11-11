@@ -46,3 +46,4 @@ export class ReadingNotificationService {
     await Notifications.cancelAllScheduledNotificationsAsync();
   }
 }
+

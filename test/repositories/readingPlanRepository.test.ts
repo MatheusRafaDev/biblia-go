@@ -52,3 +52,4 @@ describe('ReadingPlanRepository', () => {
     expect(finalProgress.completedDays).toBe(1);
   });
 });
+

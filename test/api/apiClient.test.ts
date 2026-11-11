@@ -72,3 +72,4 @@ describe('Phase 2 API Contracts and Zod Validation', () => {
     expect(parsed.readingProgress[0].isCompleted).toBe(true);
   });
 });
+
