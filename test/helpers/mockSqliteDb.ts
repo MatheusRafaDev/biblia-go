@@ -7,9 +7,11 @@ export class MockSqliteDb implements ISqliteDb {
   favorites: DbFavorite[] = [];
   plans: { id: string; title: string; description: string; total_days: number }[] = [];
   readingProgress: { id: number; plan_id: string; day_number: number; passage_reference: string; completed_at: string | null; is_completed: number }[] = [];
+  quizProgress: { id: number; category: string; score: number; total_questions: number; played_at: string }[] = [];
   private nextVerseId = 1;
   private nextFavId = 1;
   private nextProgressId = 1;
+  private nextQuizId = 1;
 
   async execAsync(_sql: string): Promise<void> {
     // Simulated table creation
@@ -148,6 +150,25 @@ export class MockSqliteDb implements ISqliteDb {
       return { changes: 1, lastInsertRowId: 0 };
     }
 
+    if (s.startsWith('INSERT INTO quiz_progress')) {
+      const [category, score, total_questions] = params as [string, number, number];
+      const item = {
+        id: this.nextQuizId++,
+        category,
+        score,
+        total_questions,
+        played_at: new Date().toISOString(),
+      };
+      this.quizProgress.push(item);
+      return { changes: 1, lastInsertRowId: item.id };
+    }
+
+    if (s.startsWith('DELETE FROM quiz_progress')) {
+      const count = this.quizProgress.length;
+      this.quizProgress = [];
+      return { changes: count, lastInsertRowId: 0 };
+    }
+
     return { changes: 0, lastInsertRowId: 0 };
   }
 
@@ -215,6 +236,10 @@ export class MockSqliteDb implements ISqliteDb {
       return this.favorites.filter((f) => f.translation_id === translation_id) as unknown as T[];
     }
 
+    if (s.includes('FROM quiz_progress')) {
+      return [...this.quizProgress].reverse() as unknown as T[];
+    }
+
     if (s.includes('FROM reading_plans')) {
       return [...this.plans] as unknown as T[];
     }
@@ -249,6 +274,15 @@ export class MockSqliteDb implements ISqliteDb {
           v.verse === verse
       );
       return (match ?? null) as unknown as T;
+    }
+
+    if (s.includes('SELECT COUNT(*) as count FROM quiz_progress')) {
+      return { count: this.quizProgress.length } as unknown as T;
+    }
+
+    if (s.includes('SELECT MAX(score) as maxScore FROM quiz_progress')) {
+      const max = this.quizProgress.reduce((m, item) => Math.max(m, item.score), 0);
+      return { maxScore: max } as unknown as T;
     }
 
     if (s.includes('SELECT COUNT(*) as count FROM reading_progress WHERE plan_id = ? AND is_completed = 1')) {

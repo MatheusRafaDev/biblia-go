@@ -5,12 +5,14 @@ import { runMigrations } from './migrations';
 import { BibleRepository, IBibleRepository } from './repositories/bibleRepository';
 import { FavoritesRepository, IFavoritesRepository } from './repositories/favoritesRepository';
 import { ReadingPlanRepository, IReadingPlanRepository } from './repositories/readingPlanRepository';
+import { QuizRepository, IQuizRepository } from './repositories/quizRepository';
 
 interface DatabaseContextValue {
   db: ISqliteDb | null;
   bibleRepository: IBibleRepository | null;
   favoritesRepository: IFavoritesRepository | null;
   readingPlanRepository: IReadingPlanRepository | null;
+  quizRepository: IQuizRepository | null;
   isReady: boolean;
   error: Error | null;
 }
@@ -20,6 +22,7 @@ const DatabaseContext = createContext<DatabaseContextValue>({
   bibleRepository: null,
   favoritesRepository: null,
   readingPlanRepository: null,
+  quizRepository: null,
   isReady: false,
   error: null,
 });
@@ -31,6 +34,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   const [bibleRepository, setBibleRepository] = useState<IBibleRepository | null>(null);
   const [favoritesRepository, setFavoritesRepository] = useState<IFavoritesRepository | null>(null);
   const [readingPlanRepository, setReadingPlanRepository] = useState<IReadingPlanRepository | null>(null);
+  const [quizRepository, setQuizRepository] = useState<IQuizRepository | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -46,12 +50,14 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
           const bRepo = new BibleRepository(sqliteDb);
           const fRepo = new FavoritesRepository(sqliteDb);
           const pRepo = new ReadingPlanRepository(sqliteDb);
+          const qRepo = new QuizRepository(sqliteDb);
           await pRepo.ensurePlansSeeded();
 
           setDb(sqliteDb);
           setBibleRepository(bRepo);
           setFavoritesRepository(fRepo);
           setReadingPlanRepository(pRepo);
+          setQuizRepository(qRepo);
           setIsReady(true);
         }
       } catch (err) {
@@ -75,6 +81,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
         bibleRepository,
         favoritesRepository,
         readingPlanRepository,
+        quizRepository,
         isReady,
         error,
       }}
@@ -114,4 +121,12 @@ export function useReadingPlanRepository(): IReadingPlanRepository {
     throw new Error('ReadingPlanRepository not ready. Database is still initializing.');
   }
   return readingPlanRepository;
+}
+
+export function useQuizRepository(): IQuizRepository {
+  const { quizRepository, isReady } = useDatabase();
+  if (!isReady || !quizRepository) {
+    throw new Error('QuizRepository not ready. Database is still initializing.');
+  }
+  return quizRepository;
 }
