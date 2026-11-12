@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ISqliteDatabase } from '../db/types';
+import { ISqliteDb } from '../db/types';
 
 export const UserBackupSchema = z.object({
   version: z.literal(1),
@@ -42,7 +42,7 @@ export interface ImportSummary {
   quizScoresImported: number;
 }
 
-export async function exportLocalUserData(db: ISqliteDatabase): Promise<UserBackupData> {
+export async function exportLocalUserData(db: ISqliteDb): Promise<UserBackupData> {
   const favorites = await db.getAllAsync<{
     translation_id: string;
     book_id: string;
@@ -82,7 +82,7 @@ export function validateBackupData(data: unknown): UserBackupData {
 }
 
 export async function importLocalUserData(
-  db: ISqliteDatabase,
+  db: ISqliteDb,
   backup: UserBackupData
 ): Promise<ImportSummary> {
   let favCount = 0;
@@ -90,15 +90,13 @@ export async function importLocalUserData(
     await db.runAsync(
       `INSERT OR REPLACE INTO favorites (translation_id, book_id, chapter, verse, color, note, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        fav.translation_id,
-        fav.book_id,
-        fav.chapter,
-        fav.verse,
-        fav.color ?? '#FFE699',
-        fav.note ?? null,
-        fav.updated_at ?? new Date().toISOString(),
-      ]
+      fav.translation_id,
+      fav.book_id,
+      fav.chapter,
+      fav.verse,
+      fav.color ?? '#FFE699',
+      fav.note ?? null,
+      fav.updated_at ?? new Date().toISOString()
     );
     favCount++;
   }
@@ -108,7 +106,9 @@ export async function importLocalUserData(
     await db.runAsync(
       `INSERT OR REPLACE INTO reading_progress (plan_id, day, completed_at)
        VALUES (?, ?, ?)`,
-      [p.plan_id, p.day, p.completed_at ?? new Date().toISOString()]
+      p.plan_id,
+      p.day,
+      p.completed_at ?? new Date().toISOString()
     );
     progCount++;
   }
@@ -118,7 +118,11 @@ export async function importLocalUserData(
     await db.runAsync(
       `INSERT INTO quiz_scores (category, score, total_questions, correct_answers, completed_at)
        VALUES (?, ?, ?, ?, ?)`,
-      [q.category, q.score, q.total_questions, q.correct_answers, q.completed_at ?? new Date().toISOString()]
+      q.category,
+      q.score,
+      q.total_questions,
+      q.correct_answers,
+      q.completed_at ?? new Date().toISOString()
     );
     quizCount++;
   }
@@ -129,3 +133,4 @@ export async function importLocalUserData(
     quizScoresImported: quizCount,
   };
 }
+
