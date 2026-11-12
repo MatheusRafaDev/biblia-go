@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bíblia Go — Leia. Estude. Guarde. | O App Bíblico Definitivo</title>
+  <meta name="description" content="O aplicativo bíblico moderno, offline-first e livre de distrações. Leitor em áudio TTS, comparador multiversões com análise léxica, planos com sequências e IA teológica.">
+  <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
+
+  <!-- Fonts: Fraunces (Editorial Serif), Inter & Nunito (Modern UI) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..800;1,9..144,400..700&family=Inter:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            paper: '#FBF7EE',
+            'paper-muted': '#F5EFE3',
+            'paper-border': '#E8E2D5',
+            navy: {
+              900: '#26244A',
+              700: '#4F4B72',
+              500: '#7E7A9C',
+            },
+            cerulean: {
+              DEFAULT: '#3B6EF5',
+              dark: '#2A5CDD',
+              light: '#EAF2FF',
+            },
+            midnight: {
+              900: '#151424',
+              800: '#1F1D33',
+              700: '#2A2744',
+              border: '#363258',
+            },
+            gold: {
+              50: '#FEF8E7',
+              DEFAULT: '#F59E0B',
+              dark: '#D97706',
+            },
+            emerald: {
+              pastel: '#EAF8EE',
+            },
+            coral: {
+              pastel: '#FDEEE9',
+            }
+          },
+          fontFamily: {
+            serif: ['Fraunces', 'Georgia', 'serif'],
+            sans: ['Inter', 'Nunito', 'sans-serif'],
+            display: ['Nunito', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Paper Grain & Smooth Shadows */
+    .bg-paper-pattern {
+      background-color: #FBF7EE;
+      background-image: radial-gradient(#26244A 0.45px, transparent 0.45px);
+      background-size: 24px 24px;
+    }
+    .dark .bg-midnight-pattern {
+      background-color: #151424;
+      background-image: radial-gradient(#5482FF 0.45px, transparent 0.45px);
+      background-size: 24px 24px;
+    }
+    .shadow-phone {
+      box-shadow: 0 25px 60px -15px rgba(38, 36, 74, 0.25), 0 0 0 12px #26244A;
+    }
+    .dark .shadow-phone {
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 12px #2A2744;
+    }
+    .text-glow {
+      text-shadow: 0 0 24px rgba(59, 110, 245, 0.35);
+    }
+  </style>
+</head>
+<body class="bg-paper text-navy-900 font-sans antialiased transition-colors duration-300 dark:bg-midnight-900 dark:text-gray-100">
+
+  <!-- ==================== TOP NAVIGATION ==================== -->
+  <header class="sticky top-0 z-50 backdrop-blur-md bg-paper/90 border-b border-paper-border dark:bg-midnight-900/90 dark:border-midnight-border transition-colors">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <!-- Brand Logo -->
+      <a href="#" class="flex items-center gap-3 group">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-cerulean to-cerulean-dark flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+          <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-baseline gap-1">
+            <span class="font-serif font-bold text-2xl tracking-tight text-navy-900 dark:text-white">Bíblia</span>
+            <span class="font-display font-black text-2xl text-cerulean">Go</span>
+          </div>
+          <span class="text-[9px] font-bold tracking-widest text-navy-500 uppercase -mt-1 dark:text-navy-500">Leia • Estude • Guarde</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav Links -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-navy-700 dark:text-gray-300">
+        <a href="#recursos" class="hover:text-cerulean transition-colors">Recursos</a>
+        <a href="#interativo" class="hover:text-cerulean transition-colors">Leitor Interativo</a>
+        <a href="#comparador" class="hover:text-cerulean transition-colors">Comparador</a>
+        <a href="#planos" class="hover:text-cerulean transition-colors">Planos & Gamificação</a>
+        <a href="#ia" class="hover:text-cerulean transition-colors">IA Teológica</a>
+        <a href="#manifesto" class="hover:text-cerulean transition-colors">Manifesto</a>
+      </nav>
+
+      <!-- Right Actions: Theme Toggle & CTA -->
+      <div class="flex items-center gap-3">
+        <!-- Dark Mode Toggle Button -->
+        <button id="themeToggle" class="w-10 h-10 rounded-xl border border-paper-border dark:border-midnight-border bg-white dark:bg-midnight-800 flex items-center justify-center text-navy-700 dark:text-yellow-400 hover:scale-105 transition-transform" aria-label="Alternar tema">
+          <svg id="sunIcon" class="w-5 h-5 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <svg id="moonIcon" class="w-5 h-5 block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+
+        <!-- CTA Button -->
+        <a href="#interativo" class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cerulean hover:bg-cerulean-dark text-white text-sm font-bold shadow-md hover:shadow-lg transition-all">
+          <span>Testar Online</span>
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== HERO SECTION ==================== -->
+  <section class="relative overflow-hidden pt-12 pb-24 md:pt-20 md:pb-32 bg-paper-pattern dark:bg-midnight-pattern">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+        
+        <!-- Left Column: Copy & Value Proposition -->
+        <div class="lg:col-span-7 flex flex-col items-start gap-6">
+          <!-- Announcement Pill -->
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cerulean-light dark:bg-midnight-800 border border-cerulean/20 text-cerulean text-xs font-bold shadow-sm">
+            <span class="w-2 h-2 rounded-full bg-cerulean animate-ping"></span>
+            <span>Versão 1.1.0 • Offline-First, Leitor em Áudio & IA RAG</span>
+          </div>
+
+          <!-- Main Headline with Editorial Serif Accent -->
+          <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.12] text-navy-900 dark:text-white tracking-tight">
+            A Palavra Viva, no seu Ritmo e <span class="italic font-normal text-cerulean dark:text-cerulean-light underline decoration-gold/60 decoration-wavy decoration-2">Sem Distrações</span>.
+          </h1>
+
+          <!-- Subheadline -->
+          <p class="text-lg sm:text-xl text-navy-700 dark:text-gray-300 font-normal leading-relaxed max-w-2xl">
+            O aplicativo bíblico definitivo que une a nobreza e a solenidade das Escrituras Sagradas com tecnologia de ponta: leitura offline ultrarrápida com SQLite nativo, leitor em áudio inteligente (TTS), comparador trilateral de traduções, planos com sequências de dias e assistente teológico com IA.
+          </p>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-wrap items-center gap-4 pt-2">
+            <a href="#interativo" class="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-2xl bg-cerulean hover:bg-cerulean-dark text-white font-bold text-base shadow-lg hover:shadow-cerulean/30 hover:-translate-y-0.5 transition-all">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <span>Experimentar App Web</span>
+            </a>
+
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl border-2 border-paper-border dark:border-midnight-border bg-white dark:bg-midnight-800 text-navy-900 dark:text-white font-bold text-base hover:bg-paper-muted dark:hover:bg-midnight-700 transition-all">
+              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+              </svg>
+              <span>GitHub (Open Source)</span>
+            </a>
+          </div>
+
+          <!-- Trust & Value Badges -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-paper-border dark:border-midnight-border w-full">
+            <div class="flex items-center gap-2">
+              <span class="text-cerulean font-bold text-lg">⚡</span>
+              <span class="text-xs font-semibold text-navy-700 dark:text-gray-300">100% Offline (SQLite)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-gold font-bold text-lg">🛡️</span>
+              <span class="text-xs font-semibold text-navy-700 dark:text-gray-300">Zero Anúncios</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-cerulean font-bold text-lg">🎧</span>
+              <span class="text-xs font-semibold text-navy-700 dark:text-gray-300">Áudio Integrado</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-green-600 font-bold text-lg">⚖️</span>
+              <span class="text-xs font-semibold text-navy-700 dark:text-gray-300">Comparador Trilateral</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Interactive Phone Mockup Showcase -->
+        <div class="lg:col-span-5 flex justify-center">
+          <div class="relative w-full max-w-[360px]">
+            <!-- Subtle Ambient Glow behind Phone -->
+            <div class="absolute -inset-4 bg-gradient-to-r from-cerulean/30 to-gold/30 rounded-[56px] blur-2xl opacity-60 dark:opacity-40 -z-10"></div>
+
+            <!-- Phone Frame -->
+            <div class="rounded-[48px] bg-white dark:bg-midnight-800 border-8 border-navy-900 dark:border-midnight-border shadow-phone overflow-hidden flex flex-col h-[700px] select-none transition-colors">
+              <!-- Notch / Dynamic Island Bar -->
+              <div class="bg-navy-900 dark:bg-midnight-900 h-6 flex items-center justify-between px-8 text-[11px] text-white font-medium">
+                <span>9:41</span>
+                <div class="w-20 h-4 bg-black rounded-full"></div>
+                <div class="flex items-center gap-1.5">
+                  <span>5G</span>
+                  <span>100%</span>
+                </div>
+              </div>
+
+              <!-- Top In-App Header -->
+              <div class="bg-paper dark:bg-midnight-900 border-b border-paper-border dark:border-midnight-border px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="px-3 py-1.5 rounded-full bg-white dark:bg-midnight-800 border border-paper-border dark:border-midnight-border flex items-center gap-1.5 text-xs font-bold text-navy-900 dark:text-white">
+                    <span>Gênesis 1</span>
+                    <span class="text-cerulean">▾</span>
+                  </div>
+                  <div class="px-2.5 py-1 rounded-full bg-cerulean-light dark:bg-midnight-700 text-cerulean dark:text-cerulean-light text-[11px] font-extrabold border border-cerulean/20">
+                    ACF11
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs px-2 py-0.5 rounded-md bg-paper-muted dark:bg-midnight-800 text-navy-500 font-semibold">⏱ ~4 min</span>
+                  <div class="w-7 h-7 rounded-full bg-white dark:bg-midnight-800 flex items-center justify-center text-xs text-navy-700 dark:text-gray-300">•••</div>
+                </div>
+              </div>
+
+              <!-- Scripture Reading Canvas in Mockup -->
+              <div class="flex-1 bg-paper dark:bg-midnight-900 p-4 overflow-y-auto space-y-3.5 text-navy-900 dark:text-gray-100 font-serif leading-relaxed text-[15px]">
+                <div class="text-center py-2 border-b border-paper-border/60 dark:border-midnight-border/60">
+                  <h3 class="font-serif font-extrabold text-lg text-navy-900 dark:text-white">Gênesis</h3>
+                  <p class="text-xs font-sans font-bold text-cerulean">Capítulo 1</p>
+                </div>
+
+                <p class="p-1 rounded bg-[#FFF59D]/50 dark:bg-yellow-900/40">
+                  <sup class="font-sans font-bold text-cerulean mr-1">1</sup>
+                  No princípio criou Deus os céus e a terra.
+                </p>
+
+                <p class="p-1">
+                  <sup class="font-sans font-bold text-cerulean mr-1">2</sup>
+                  E a terra era sem forma e vazia; e havia trevas sobre a face do abismo; e o Espírito de Deus se movia sobre a face das águas.
+                </p>
+
+                <p class="p-1 rounded bg-[#C8E6C9]/50 dark:bg-emerald-900/40 relative">
+                  <sup class="font-sans font-bold text-cerulean mr-1">3</sup>
+                  E disse Deus: Haja luz; e houve luz.
+                  <span class="inline-flex ml-1.5 px-1 py-0.5 text-[10px] font-sans font-bold rounded bg-cerulean text-white">📝 Nota</span>
+                </p>
+
+                <p class="p-1">
+                  <sup class="font-sans font-bold text-cerulean mr-1">4</sup>
+                  E viu Deus que era boa a luz; e fez Deus separação entre a luz e as trevas.
+                </p>
+              </div>
+
+              <!-- Floating Audio Player Bar in Mockup -->
+              <div class="mx-3 mb-2 p-2.5 rounded-2xl bg-white dark:bg-midnight-800 border border-paper-border dark:border-midnight-border shadow-lg flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full bg-cerulean flex items-center justify-center text-white text-xs">
+                    ▶
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="text-[11px] font-bold text-navy-900 dark:text-white font-sans leading-none">Gênesis 1:1</span>
+                    <span class="text-[9px] text-navy-500 font-sans mt-0.5">Voz em Português • 1.0x</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 text-xs text-navy-700 dark:text-gray-300 font-sans">
+                  <span class="px-1.5 py-0.5 rounded bg-paper-muted dark:bg-midnight-700 text-[10px] font-bold">1.25x</span>
+                </div>
+              </div>
+
+              <!-- Bottom Tab Bar in Mockup -->
+              <div class="bg-white dark:bg-midnight-800 border-t border-paper-border dark:border-midnight-border h-14 px-6 flex items-center justify-between text-[10px] font-sans font-bold text-navy-500">
+                <div class="flex flex-col items-center gap-0.5 text-cerulean">
+                  <span>📖</span>
+                  <span>Ler</span>
+                </div>
+                <div class="flex flex-col items-center gap-0.5">
+                  <span>⚖️</span>
+                  <span>Comparar</span>
+                </div>
+                <div class="flex flex-col items-center gap-0.5">
+                  <span>🗓️</span>
+                  <span>Plano</span>
+                </div>
+                <div class="flex flex-col items-center gap-0.5">
+                  <span>🏆</span>
+                  <span>Quiz</span>
+                </div>
+                <div class="flex flex-col items-center gap-0.5">
+                  <span>👥</span>
+                  <span>Grafo</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== RECURSOS EM DESTAQUE ==================== -->
+  <section id="recursos" class="py-24 bg-white dark:bg-midnight-800 border-y border-paper-border dark:border-midnight-border transition-colors">
+    <div class="max-w-7xl mx-auto px-6">
+      
+      <!-- Section Header -->
+      <div class="text-center max-w-3xl mx-auto mb-16 space-y-4">
+        <h2 class="text-xs font-extrabold tracking-widest text-cerulean uppercase">Engenharia Espiritual & Tecnológica</h2>
+        <h3 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy-900 dark:text-white tracking-tight">
+          Tudo o que você precisa para se aprofundar na Palavra.
+        </h3>
+        <p class="text-base sm:text-lg text-navy-700 dark:text-gray-300 font-normal">
+          Construído do zero com arquitetura móvel nativa, pensando em quem estuda seriamente as Escrituras todos os dias.
+        </p>
+      </div>
+
+      <!-- Feature Grid: 6 Pillars -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        
+        <!-- Feature 1: Offline SQLite & FTS5 -->
+        <div class="p-8 rounded-3xl bg-paper dark:bg-midnight-900 border border-paper-border dark:border-midnight-border hover:border-cerulean/50 transition-all space-y-4 group">
+          <div class="w-14 h-14 rounded-2xl bg-cerulean-light dark:bg-midnight-800 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+            ⚡
+          </div>
+          <h4 class="font-serif font-bold text-xl text-navy-900 dark:text-white">100% Offline com SQLite FTS5</h4>
+          <p class="text-sm text-navy-700 dark:text-gray-300 leading-relaxed">
+            Todas as traduções bíblicas e versículos residem no banco SQLite local do seu aparelho. Busque qualquer termo instantaneamente em milissegundos sem gastar plano de dados.
+          </p>
+        </div>
+
+        <!-- Feature 2: Audio Player TTS -->
+        <div class="p-8 rounded-3xl bg-paper dark:bg-midnight-900 border border-paper-border dark:border-midnight-border hover:border-cerulean/50 transition-all space-y-4 group">
+          <div class="w-14 h-14 rounded-2xl bg-gold-50 dark:bg-midnight-800 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+            🎧
+          </div>
+          <h4 class="font-serif font-bold text-xl text-navy-900 dark:text-white">Leitor em Áudio Sincronizado</h4>
+          <p class="text-sm text-navy-700 dark:text-gray-300 leading-relaxed">
+            Ouça as Escrituras versículo por versículo enquanto o texto é realçado em tempo real na tela. Controle de velocidade ajustável de 0.75x a 1.5x para meditação diária.
+          </p>
+        </div>
+
+        <!-- Feature 3: Trilateral Compare -->
+        <div class="p-8 rounded-3xl bg-paper dark:bg-midnight-900 border border-paper-border dark:border-midnight-border hover:border-cerulean/50 transition-all space-y-4 group">
+          <div class="w-14 h-14 rounded-2xl bg-emerald-pastel dark:bg-midnight-800 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+            ⚖️
+          </div>
+          <h4 class="font-serif font-bold text-xl text-navy-900 dark:text-white">Comparador de Versões com Diff</h4>
+          <p class="text-sm text-navy-700 dark:text-gray-300 leading-relaxed">
+            Compare ACF11, ARA e KJV lado a lado. O algoritmo de Text Diff realça as palavras divergentes e gera uma matriz de similaridade de vocabulário e concordância.
+          </p>
+        </div>
+
+        <!-- Feature 4: Plan Generator & Streaks -->
+        <div class="p-8 rounded-3xl bg-paper dark:bg-midnight-900 border border-paper-border dark:border-midnight-border hover:border-cerulean/50 transition-all space-y-4 group">
+          <div class="w-14 h-14 rounded-2xl bg-coral-pastel dark:bg-midnight-800 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+            🗓️
+          </div>
+          <h4 class="font-serif font-bold text-xl text-navy-900 dark:text-white">Planos Sob Medida & Sequências</h4>
+          <p class="text-sm text-navy-700 dark:text-gray-300 leading-relaxed">
+            Gere planos personalizados escolhendo livros e duração (15 a 365 dias). Ganhe badges comemorativos como <em>Guerreiro da Fé</em> e mantenha sua chama diária acesa.
+          </p>
+        </div>
+
+        <!-- Feature 5: Quiz Gamificado -->
+        <div class="p-8 rounded-3xl bg-paper dark:bg-midnight-900 border border-paper-border dark:border-midnight-border hover:border-cerulean/50 transition-all space-y-4 group">
+          <div class="w-14 h-14 rounded-2xl bg-cerulean-light dark:bg-midnight-800 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+            🏆
+          </div>
+          <h4 class="font-serif font-bold text-xl text-navy-900 dark:text-white">Quiz Bíblico & Níveis de Domínio</h4>
+          <p class="text-sm text-navy-700 dark:text-gray-300 leading-relaxed">
+            Perguntas por categorias com bônus de acertos consecutivos. Suba do patamar de <em>Iniciante</em> a <em>Mestre das Escrituras</em> com explicações teológicas exegéticas.
+          </p>
+        </div>
+
+        <!-- Feature 6: Theographic Graph & AI -->
+        <div class="p-8 rounded-3xl bg-paper dark:bg-midnight-900 border border-paper-border dark:border-midnight-border hover:border-cerulean/50 transition-all space-y-4 group">
+          <div class="w-14 h-14 rounded-2xl bg-gold-50 dark:bg-midnight-800 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+            ✨
+          </div>
+          <h4 class="font-serif font-bold text-xl text-navy-900 dark:text-white">Grafo de Personagens & IA Semântica</h4>
+          <p class="text-sm text-navy-700 dark:text-gray-300 leading-relaxed">
+            Navegue pelas genealogias bíblicas de forma visual. Utilize nossa IA com busca semântica para encontrar versículos a partir de temas como ansiedade, luto ou gratidão.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== DEMO INTERATIVA ==================== -->
+  <section id="interativo" class="py-24 bg-paper-pattern dark:bg-midnight-pattern">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="text-center max-w-2xl mx-auto mb-12 space-y-3">
+        <span class="text-xs font-extrabold tracking-widest text-cerulean uppercase">Experimente Agora</span>
+        <h3 class="font-serif text-3xl sm:text-4xl font-extrabold text-navy-900 dark:text-white">
+          Sinta a Leitura do Bíblia Go no seu Navegador
+        </h3>
+        <p class="text-sm sm:text-base text-navy-700 dark:text-gray-300">
+          Ajuste o tamanho do texto, alterne entre versões e teste os marcadores de estudo em tempo real.
+        </p>
+      </div>
+
+      <!-- Interactive Widget Card -->
+      <div class="rounded-3xl bg-white dark:bg-midnight-800 border-2 border-paper-border dark:border-midnight-border shadow-xl overflow-hidden p-6 sm:p-8 space-y-6">
+        
+        <!-- Controls Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-paper-border dark:border-midnight-border">
+          <!-- Book and Version Selector -->
+          <div class="flex items-center gap-3">
+            <select id="interactiveBook" class="px-4 py-2 rounded-xl bg-paper dark:bg-midnight-900 border border-paper-border dark:border-midnight-border text-xs sm:text-sm font-bold text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cerulean">
+              <option value="salmos23">Salmos 23</option>
+              <option value="genesis1">Gênesis 1</option>
+              <option value="joao1">João 1</option>
+            </select>
+
+            <select id="interactiveVersion" class="px-3.5 py-2 rounded-xl bg-cerulean-light dark:bg-midnight-900 border border-cerulean/30 text-cerulean text-xs sm:text-sm font-extrabold focus:outline-none">
+              <option value="ACF11">ACF11 (Almeida Corrigida)</option>
+              <option value="ARA">ARA (Almeida Revista e Atualizada)</option>
+              <option value="KJV">KJV (King James Version)</option>
+            </select>
+          </div>
+
+          <!-- Font Size Stepper -->
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-navy-500 mr-1">Tamanho da Fonte:</span>
+            <button id="fontDec" class="w-8 h-8 rounded-lg bg-paper dark:bg-midnight-900 border border-paper-border dark:border-midnight-border font-bold text-sm text-navy-700 dark:text-gray-200 hover:bg-paper-muted">-</button>
+            <span id="fontSizeDisplay" class="text-xs font-bold text-cerulean w-10 text-center">18pt</span>
+            <button id="fontInc" class="w-8 h-8 rounded-lg bg-paper dark:bg-midnight-900 border border-paper-border dark:border-midnight-border font-bold text-sm text-navy-700 dark:text-gray-200 hover:bg-paper-muted">+</button>
+          </div>
+        </div>
+
+        <!-- Dynamic Scripture Content Canvas -->
+        <div id="interactiveText" class="font-serif leading-[1.8] text-navy-900 dark:text-gray-100 transition-all duration-200 space-y-4" style="font-size: 18px;">
+          <p class="p-1 rounded transition-colors hover:bg-paper-muted dark:hover:bg-midnight-700">
+            <sup class="font-sans font-bold text-cerulean mr-2 text-xs">1</sup>
+            <span class="scripture-verse">O Senhor é o meu pastor, nada me faltará.</span>
+          </p>
+          <p class="p-1 rounded transition-colors hover:bg-paper-muted dark:hover:bg-midnight-700">
+            <sup class="font-sans font-bold text-cerulean mr-2 text-xs">2</sup>
+            <span class="scripture-verse">Deitar-me faz em verdes pastos, guia-me mansamente a águas tranqüilas.</span>
+          </p>
+          <p class="p-1 rounded transition-colors hover:bg-paper-muted dark:hover:bg-midnight-700">
+            <sup class="font-sans font-bold text-cerulean mr-2 text-xs">3</sup>
+            <span class="scripture-verse">Refrigera a minha alma; guia-me pelas veredas da justiça, por amor do seu nome.</span>
+          </p>
+          <p class="p-1 rounded transition-colors hover:bg-paper-muted dark:hover:bg-midnight-700">
+            <sup class="font-sans font-bold text-cerulean mr-2 text-xs">4</sup>
+            <span class="scripture-verse">Ainda que eu andasse pelo vale da sombra da morte, não temeria mal algum, porque tu estás comigo; a tua vara e o teu cajado me consolam.</span>
+          </p>
+        </div>
+
+        <!-- Interactive Audio Player Bar -->
+        <div class="pt-4 border-t border-paper-border dark:border-midnight-border flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <button id="demoPlayBtn" class="px-4 py-2 rounded-xl bg-cerulean hover:bg-cerulean-dark text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-transform active:scale-95">
+              <span id="demoPlayIcon">▶</span>
+              <span id="demoPlayText">Ouvir Capítulo em Áudio</span>
+            </button>
+            <span id="demoAudioStatus" class="text-xs text-navy-500 font-sans font-medium hidden">🔊 Reproduzindo com voz natural...</span>
+          </div>
+
+          <div class="flex items-center gap-2 text-xs text-navy-500 font-medium">
+            <span>Estimativa:</span>
+            <span class="font-bold text-cerulean">~2 min de leitura</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== MANIFESTO & VALORES ==================== -->
+  <section id="manifesto" class="py-24 bg-white dark:bg-midnight-800 border-t border-paper-border dark:border-midnight-border transition-colors">
+    <div class="max-w-4xl mx-auto px-6 text-center space-y-8">
+      <div class="inline-block p-4 rounded-3xl bg-cerulean-light dark:bg-midnight-900 border border-cerulean/20 text-3xl">
+        📖
+      </div>
+
+      <h3 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy-900 dark:text-white leading-tight">
+        A Palavra não foi feita para disputar atenção com notificações ou algoritmos.
+      </h3>
+
+      <p class="text-base sm:text-lg text-navy-700 dark:text-gray-300 leading-relaxed max-w-2xl mx-auto font-normal">
+        O Bíblia Go nasceu da convicção de que um aplicativo de estudo bíblico deve ser um santuário silencioso no seu bolso. Sem anúncios piscando, sem coletas invasivas de dados e sem algoritmos de retenção artificial. Apenas você, as Escrituras e a voz de Deus.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 text-left">
+        <div class="p-6 rounded-2xl bg-paper dark:bg-midnight-900 border border-paper-border dark:border-midnight-border space-y-2">
+          <h5 class="font-bold text-navy-900 dark:text-white font-serif text-lg">Acolhedora</h5>
+          <p class="text-xs text-navy-700 dark:text-gray-300 leading-relaxed">Convida você à leitura sem cobranças ou culpas. Retome seu plano de onde parou a qualquer momento.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-paper dark:bg-midnight-900 border border-paper-border dark:border-midnight-border space-y-2">
+          <h5 class="font-bold text-navy-900 dark:text-white font-serif text-lg">Reverente</h5>
+          <p class="text-xs text-navy-700 dark:text-gray-300 leading-relaxed">Linguagem clássica, tipografia editorial e respeito solene com as traduções originais dos textos sagrados.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-paper dark:bg-midnight-900 border border-paper-border dark:border-midnight-border space-y-2">
+          <h5 class="font-bold text-navy-900 dark:text-white font-serif text-lg">Encorajadora</h5>
+          <p class="text-xs text-navy-700 dark:text-gray-300 leading-relaxed">Comemore seus marcos de estudo com badges de fé e aprofunde seu conhecimento com o quiz.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="bg-paper dark:bg-midnight-900 border-t border-paper-border dark:border-midnight-border py-16 transition-colors">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-8 pb-12 border-b border-paper-border dark:border-midnight-border">
+        
+        <!-- Brand Info -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-cerulean flex items-center justify-center text-white font-bold text-lg">
+            ✝
+          </div>
+          <div>
+            <div class="flex items-baseline gap-1">
+              <span class="font-serif font-bold text-xl text-navy-900 dark:text-white">Bíblia</span>
+              <span class="font-display font-black text-xl text-cerulean">Go</span>
+            </div>
+            <p class="text-xs text-navy-500">Leia. Estude. Guarde.</p>
+          </div>
+        </div>
+
+        <!-- Links -->
+        <div class="flex flex-wrap items-center gap-8 text-sm font-semibold text-navy-700 dark:text-gray-300">
+          <a href="#recursos" class="hover:text-cerulean">Recursos</a>
+          <a href="#interativo" class="hover:text-cerulean">App Online</a>
+          <a href="#manifesto" class="hover:text-cerulean">Manifesto</a>
+          <a href="https://github.com" target="_blank" class="hover:text-cerulean">GitHub</a>
+        </div>
+      </div>
+
+      <!-- Copyright & Open Source -->
+      <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-navy-500">
+        <p>© 2026 Bíblia Go. Desenvolvido com reverência para edificação e estudo.</p>
+        <p>Código aberto sob Licença MIT • Expo SDK 58 & Fastify</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    // 1. Dark Mode Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const htmlEl = document.documentElement;
+
+    themeToggle.addEventListener('click', () => {
+      if (htmlEl.classList.contains('dark')) {
+        htmlEl.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      } else {
+        htmlEl.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+
+    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      htmlEl.classList.add('dark');
+    }
+
+    // 2. Interactive Font Size Stepper
+    let currentFontSize = 18;
+    const interactiveText = document.getElementById('interactiveText');
+    const fontSizeDisplay = document.getElementById('fontSizeDisplay');
+
+    document.getElementById('fontInc').addEventListener('click', () => {
+      if (currentFontSize < 28) {
+        currentFontSize += 2;
+        interactiveText.style.fontSize = `${currentFontSize}px`;
+        fontSizeDisplay.textContent = `${currentFontSize}pt`;
+      }
+    });
+
+    document.getElementById('fontDec').addEventListener('click', () => {
+      if (currentFontSize > 14) {
+        currentFontSize -= 2;
+        interactiveText.style.fontSize = `${currentFontSize}px`;
+        fontSizeDisplay.textContent = `${currentFontSize}pt`;
+      }
+    });
+
+    // 3. Interactive Passage Data Switcher
+    const PASSAGES = {
+      salmos23: {
+        ACF11: [
+          "O Senhor é o meu pastor, nada me faltará.",
+          "Deitar-me faz em verdes pastos, guia-me mansamente a águas tranqüilas.",
+          "Refrigera a minha alma; guia-me pelas veredas da justiça, por amor do seu nome.",
+          "Ainda que eu andasse pelo vale da sombra da morte, não temeria mal algum, porque tu estás comigo; a tua vara e o teu cajado me consolam."
+        ],
+        ARA: [
+          "O Senhor é o meu pastor; nada me faltará.",
+          "Ele me faz repousar em pastos verdejantes. Leva-me para junto das águas de descanso;",
+          "refrigera-me a alma. Guia-me pelas veredas da justiça por amor do seu nome.",
+          "Ainda que eu ande pelo vale da sombra da morte, não temerei mal nenhum, porque tu estás comigo; o teu bordão e o teu cajado me consolam."
+        ],
+        KJV: [
+          "The LORD is my shepherd; I shall not want.",
+          "He maketh me to lie down in green pastures: he leadeth me beside the still waters.",
+          "He restoreth my soul: he leadeth me in the paths of righteousness for his name's sake.",
+          "Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me; thy rod and thy staff they comfort me."
+        ]
+      },
+      genesis1: {
+        ACF11: [
+          "No princípio criou Deus os céus e a terra.",
+          "E a terra era sem forma e vazia; e havia trevas sobre a face do abismo; e o Espírito de Deus se movia sobre a face das águas.",
+          "E disse Deus: Haja luz; e houve luz.",
+          "E viu Deus que era boa a luz; e fez Deus separação entre a luz e as trevas."
+        ],
+        ARA: [
+          "No princípio, criou Deus os céus e a terra.",
+          "A terra, porém, estava sem forma e vazia; havia trevas sobre a face do abismo, e o Espírito de Deus pairava por sobre as águas.",
+          "Disse Deus: Haja luz; e houve luz.",
+          "E viu Deus que a luz era boa; e fez separação entre a luz e as trevas."
+        ],
+        KJV: [
+          "In the beginning God created the heaven and the earth.",
+          "And the earth was without form, and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
+          "And God said, Let there be light: and there was light.",
+          "And God saw the light, that it was good: and God divided the light from the darkness."
+        ]
+      },
+      joao1: {
+        ACF11: [
+          "No princípio era o Verbo, e o Verbo estava com Deus, e o Verbo era Deus.",
+          "Ele estava no princípio com Deus.",
+          "Todas as coisas foram feitas por ele, e sem ele nada do que foi feito se fez.",
+          "Nele estava a vida, e a vida era a luz dos homens."
+        ],
+        ARA: [
+          "No princípio era o Verbo, e o Verbo estava com Deus, e o Verbo era Deus.",
+          "Ele estava no princípio com Deus.",
+          "Todas as coisas foram feitas por intermédio dele, e, sem ele, nada do que foi feito se fez.",
+          "A vida estava nele e a vida era a luz dos homens."
+        ],
+        KJV: [
+          "In the beginning was the Word, and the Word was with God, and the Word was God.",
+          "The same was in the beginning with God.",
+          "All things were made by him; and without him was not any thing made that was made.",
+          "In him was life; and the life was the light of men."
+        ]
+      }
+    };
+
+    function updateScriptureContent() {
+      const bookKey = document.getElementById('interactiveBook').value;
+      const versionKey = document.getElementById('interactiveVersion').value;
+      const verses = PASSAGES[bookKey][versionKey];
+
+      interactiveText.innerHTML = verses.map((text, idx) => `
+        <p class="p-1 rounded transition-colors hover:bg-paper-muted dark:hover:bg-midnight-700">
+          <sup class="font-sans font-bold text-cerulean mr-2 text-xs">${idx + 1}</sup>
+          <span class="scripture-verse">${text}</span>
+        </p>
+      `).join('');
+    }
+
+    document.getElementById('interactiveBook').addEventListener('change', updateScriptureContent);
+    document.getElementById('interactiveVersion').addEventListener('change', updateScriptureContent);
+
+    // 4. Interactive TTS Audio Player Simulation
+    let isPlaying = false;
+    const demoPlayBtn = document.getElementById('demoPlayBtn');
+    const demoPlayIcon = document.getElementById('demoPlayIcon');
+    const demoPlayText = document.getElementById('demoPlayText');
+    const demoAudioStatus = document.getElementById('demoAudioStatus');
+
+    demoPlayBtn.addEventListener('click', () => {
+      if (isPlaying) {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        isPlaying = false;
+        demoPlayIcon.textContent = '▶';
+        demoPlayText.textContent = 'Ouvir Capítulo em Áudio';
+        demoAudioStatus.classList.add('hidden');
+      } else {
+        const textElements = document.querySelectorAll('.scripture-verse');
+        const fullText = Array.from(textElements).map(el => el.textContent).join(' ');
+        
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(fullText);
+          utterance.lang = 'pt-BR';
+          utterance.rate = 1.0;
+          utterance.onend = () => {
+            isPlaying = false;
+            demoPlayIcon.textContent = '▶';
+            demoPlayText.textContent = 'Ouvir Capítulo em Áudio';
+            demoAudioStatus.classList.add('hidden');
+          };
+          window.speechSynthesis.speak(utterance);
+        }
+
+        isPlaying = true;
+        demoPlayIcon.textContent = '⏸';
+        demoPlayText.textContent = 'Pausar Áudio';
+        demoAudioStatus.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

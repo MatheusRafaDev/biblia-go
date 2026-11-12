@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient for Icon -->
+    <linearGradient id="iconBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F7DF9" />
+      <stop offset="100%" stop-color="#2451CE" />
+    </linearGradient>
+
+    <!-- Golden Light Gradient -->
+    <linearGradient id="goldH" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="60%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+
+    <!-- Page Gradients -->
+    <linearGradient id="pageHL" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#EBE5D8" />
+      <stop offset="100%" stop-color="#FFFFFF" />
+    </linearGradient>
+    <linearGradient id="pageHR" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FBF7EE" />
+    </linearGradient>
+
+    <filter id="iconShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#2451CE" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Left Icon Emblem (x: 20, y: 25, width: 150, height: 150) -->
+  <g transform="translate(20, 25)" filter="url(#iconShadow)">
+    <rect width="150" height="150" rx="36" fill="url(#iconBg)" />
+    <rect x="3" y="3" width="144" height="144" rx="33" fill="none" stroke="#FFFFFF" stroke-opacity="0.2" stroke-width="1.5" />
+
+    <!-- Glory Star -->
+    <g transform="translate(75, 46)">
+      <path d="M0,-17 L3,-5 L15,-15 L5,-3 L17,0 L5,3 L15,15 L3,5 L0,17 L-3,5 L-15,15 L-5,3 L-17,0 L-5,-3 L-15,-15 L-3,-5 Z" fill="url(#goldH)" />
+      <circle cx="0" cy="0" r="3.5" fill="#FFFFFF" />
+    </g>
+
+    <!-- Bible Book Shape -->
+    <path d="M75,68 C67,63 49,61 29,66 C26,67 24,70 24,73 L24,112 C24,116 27,118 31,118 C47,114 65,116 75,122 Z" fill="url(#pageHL)" />
+    <path d="M75,68 C83,63 101,61 121,66 C124,67 126,70 126,73 L126,112 C126,116 123,118 119,118 C103,114 85,116 75,122 Z" fill="url(#pageHR)" />
+    
+    <!-- Spine Center -->
+    <line x1="75" y1="68" x2="75" y2="122" stroke="#D3C9B4" stroke-width="1.5" />
+
+    <!-- Text Lines -->
+    <g stroke="#9C927F" stroke-width="1.8" stroke-linecap="round" opacity="0.4">
+      <line x1="36" y1="79" x2="65" y2="76" />
+      <line x1="36" y1="88" x2="65" y2="85" />
+      <line x1="36" y1="97" x2="65" y2="94" />
+      <line x1="85" y1="76" x2="114" y2="79" />
+      <line x1="85" y1="85" x2="114" y2="88" />
+      <line x1="85" y1="94" x2="114" y2="97" />
+    </g>
+
+    <!-- Ribbon -->
+    <path d="M75,115 L75,133 L79,129 L83,133 L83,116 Z" fill="url(#goldH)" />
+  </g>
+
+  <!-- Typography: Bíblia Go -->
+  <g transform="translate(200, 115)">
+    <!-- "Bíblia" in Elegant Serif Weight -->
+    <text x="0" y="0" font-family="'Fraunces', 'Georgia', serif" font-size="78" font-weight="700" fill="#26244A" letter-spacing="-1">Bíblia</text>
+
+    <!-- "Go" in Dynamic Tech Sans with Primary Brand Blue -->
+    <text x="238" y="0" font-family="'Nunito', 'Inter', -apple-system, sans-serif" font-size="78" font-weight="900" fill="#3B6EF5" letter-spacing="-0.5">Go</text>
+
+    <!-- Accent Dot above Go (Compass spark) -->
+    <circle cx="348" cy="-56" r="6" fill="url(#goldH)" />
+  </g>
+
+  <!-- Tagline: LEIA • ESTUDE • GUARDE -->
+  <g transform="translate(204, 152)">
+    <text x="0" y="0" font-family="'Nunito', 'Inter', -apple-system, sans-serif" font-size="16" font-weight="800" fill="#7E7A9C" letter-spacing="5.5">LEIA • ESTUDE • GUARDE</text>
+  </g>
+</svg>

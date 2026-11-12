@@ -47,6 +47,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "website": "npx serve website -l 4000",
     "server:dev": "npm run dev --prefix server",
     "server:build": "npm run build --prefix server",
     "server:start": "npm run start --prefix server",

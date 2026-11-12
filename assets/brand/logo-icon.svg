@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F7DF9" />
+      <stop offset="100%" stop-color="#2451CE" />
+    </linearGradient>
+
+    <!-- Golden Light Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="60%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+
+    <!-- Warm Paper Page Gradient -->
+    <linearGradient id="pageGradLeft" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#EBE5D8" />
+      <stop offset="100%" stop-color="#FFFFFF" />
+    </linearGradient>
+    <linearGradient id="pageGradRight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FBF7EE" />
+    </linearGradient>
+
+    <!-- Soft Drop Shadow -->
+    <filter id="shadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#102568" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- App Icon Background Shape with Squircle / Rounded Rect -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+
+  <!-- Inner Subtle Border -->
+  <rect x="12" y="12" width="488" height="488" rx="100" fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="2.5" />
+
+  <!-- Radiating Glory Sunburst in Background -->
+  <g opacity="0.12" fill="#FFFFFF">
+    <polygon points="256,90 262,180 250,180" />
+    <polygon points="310,105 288,188 280,180" />
+    <polygon points="360,135 305,200 300,190" />
+    <polygon points="202,105 224,188 232,180" />
+    <polygon points="152,135 207,200 212,190" />
+  </g>
+
+  <!-- Central Star of Truth / Go Compass Light -->
+  <g transform="translate(256, 150)">
+    <!-- 8-Point Holy Star -->
+    <path d="M0,-52 L9,-15 L46,-46 L15,-9 L52,0 L15,9 L46,46 L9,15 L0,52 L-9,15 L-46,46 L-15,9 L-52,0 L-15,-9 L-46,-46 L-9,-15 Z" fill="url(#goldGrad)" filter="url(#shadow)" />
+    <!-- Inner Core Sparkle -->
+    <circle cx="0" cy="0" r="10" fill="#FFFFFF" />
+  </g>
+
+  <!-- Holy Scriptures / Open Bible Vector -->
+  <g filter="url(#shadow)">
+    <!-- Left Page Group -->
+    <path d="M256,225 C230,210 170,205 106,220 C96,222 88,230 88,242 L88,370 C88,382 98,390 110,388 C166,376 222,382 256,400 Z" fill="url(#pageGradLeft)" />
+
+    <!-- Right Page Group -->
+    <path d="M256,225 C282,210 342,205 406,220 C416,222 424,230 424,242 L424,370 C424,382 414,390 402,388 C346,376 290,382 256,400 Z" fill="url(#pageGradRight)" />
+
+    <!-- Spine / Center Shadow -->
+    <path d="M253,225 L259,225 L259,400 L253,400 Z" fill="#D3C9B4" opacity="0.6" />
+
+    <!-- Left Page Subtle Text Lines -->
+    <g stroke="#9C927F" stroke-width="4.5" stroke-linecap="round" opacity="0.45">
+      <line x1="126" y1="260" x2="226" y2="252" />
+      <line x1="126" y1="288" x2="226" y2="280" />
+      <line x1="126" y1="316" x2="226" y2="308" />
+      <line x1="126" y1="344" x2="190" y2="338" />
+    </g>
+
+    <!-- Right Page Subtle Text Lines -->
+    <g stroke="#9C927F" stroke-width="4.5" stroke-linecap="round" opacity="0.45">
+      <line x1="286" y1="252" x2="386" y2="260" />
+      <line x1="286" y1="280" x2="386" y2="288" />
+      <line x1="286" y1="308" x2="386" y2="316" />
+      <line x1="286" y1="338" x2="350" y2="344" />
+    </g>
+
+    <!-- Ribbon Bookmark (Gold) -->
+    <path d="M256,380 L256,436 L268,424 L280,436 L280,382 Z" fill="url(#goldGrad)" opacity="0.95" />
+  </g>
+</svg>
