@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useReadingPlanRepository } from '@/src/shared/db/client';
+import type { CreateCustomPlanInput } from '@/src/shared/db/repositories/readingPlanRepository';
 
 export function useReadingPlans() {
   const repo = useReadingPlanRepository();
@@ -36,6 +37,20 @@ export function useToggleDayCompleted(planId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plan-day-readings', planId] });
       queryClient.invalidateQueries({ queryKey: ['reading-plan-progress', planId] });
+    },
+  });
+}
+
+export function useCreateCustomPlan() {
+  const repo = useReadingPlanRepository();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (plan: CreateCustomPlanInput) => {
+      return repo.createCustomPlan(plan);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reading-plans'] });
     },
   });
 }

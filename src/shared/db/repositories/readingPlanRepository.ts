@@ -25,12 +25,21 @@ export interface PlanProgressSummary {
   streak: number;
 }
 
+export interface CreateCustomPlanInput {
+  id: string;
+  title: string;
+  description: string;
+  totalDays: number;
+  readings: { day: number; passage: string }[];
+}
+
 export interface IReadingPlanRepository {
   ensurePlansSeeded(): Promise<void>;
   getPlans(): Promise<DbReadingPlan[]>;
   getDayReadings(planId: string): Promise<DbReadingDay[]>;
   getPlanProgress(planId: string): Promise<PlanProgressSummary>;
   toggleDayCompleted(planId: string, dayNumber: number): Promise<boolean>;
+  createCustomPlan(plan: CreateCustomPlanInput): Promise<void>;
 }
 
 export class ReadingPlanRepository implements IReadingPlanRepository {
@@ -146,6 +155,30 @@ export class ReadingPlanRepository implements IReadingPlanRepository {
     );
 
     return nextState === 1;
+  }
+
+  async createCustomPlan(plan: CreateCustomPlanInput): Promise<void> {
+    await this.ensurePlansSeeded();
+    await this.db.runAsync(
+      `INSERT OR REPLACE INTO reading_plans (id, title, description, total_days) VALUES (?, ?, ?, ?);`,
+      plan.id,
+      plan.title,
+      plan.description,
+      plan.totalDays
+    );
+
+    await this.db.withTransactionAsync(async () => {
+      await this.db.runAsync(`DELETE FROM reading_progress WHERE plan_id = ?;`, plan.id);
+      for (const r of plan.readings) {
+        await this.db.runAsync(
+          `INSERT INTO reading_progress (plan_id, day_number, passage_reference, is_completed)
+           VALUES (?, ?, ?, 0);`,
+          plan.id,
+          r.day,
+          r.passage
+        );
+      }
+    });
   }
 }
 

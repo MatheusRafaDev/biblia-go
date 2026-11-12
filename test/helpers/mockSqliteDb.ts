@@ -134,12 +134,21 @@ export class MockSqliteDb implements ISqliteDb {
       return { changes: initial - this.favorites.length, lastInsertRowId: 0 };
     }
 
-    if (s.startsWith('INSERT OR IGNORE INTO reading_plans')) {
+    if (s.startsWith('INSERT OR IGNORE INTO reading_plans') || s.startsWith('INSERT OR REPLACE INTO reading_plans')) {
       const [id, title, description, total_days] = params as [string, string, string, number];
-      if (!this.plans.some((p) => p.id === id)) {
+      const existingIdx = this.plans.findIndex((p) => p.id === id);
+      if (existingIdx >= 0) {
+        this.plans[existingIdx] = { id, title, description, total_days };
+      } else {
         this.plans.push({ id, title, description, total_days });
       }
       return { changes: 1, lastInsertRowId: 1 };
+    }
+
+    if (s.startsWith('DELETE FROM reading_progress WHERE plan_id')) {
+      const [plan_id] = params as [string];
+      this.readingProgress = this.readingProgress.filter((p) => p.plan_id !== plan_id);
+      return { changes: 1, lastInsertRowId: 0 };
     }
 
     if (s.startsWith('INSERT INTO reading_progress')) {

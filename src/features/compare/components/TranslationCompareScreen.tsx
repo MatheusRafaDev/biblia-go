@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { useCompareVerses } from '../hooks/useCompareVerses';
 import { ComparePassageSelectorModal } from './ComparePassageSelectorModal';
 import { Card } from '@/src/shared/components/Card';
 import { formatComparisonClipboard } from '../utils/formatCompareSummary';
+import { computeThreeWayDiff } from '../utils/threeWayDiff';
 
 export function TranslationCompareScreen() {
   const theme = useAppTheme();
@@ -32,6 +33,7 @@ export function TranslationCompareScreen() {
   const [showDiffHighlights, setShowDiffHighlights] = useState(true);
   const [selectorVisible, setSelectorVisible] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
 
   const currentBook = BOOKS_BY_ID.get(bookId) ?? BOOKS_BY_ID.get(1)!;
 
@@ -41,6 +43,15 @@ export function TranslationCompareScreen() {
     verse,
     selectedTranslations
   );
+
+  const threeWayDiff = useMemo(() => {
+    if (!versesData || versesData.length < 3) return null;
+    return computeThreeWayDiff(
+      { id: versesData[0].translationId, text: versesData[0].text },
+      { id: versesData[1].translationId, text: versesData[1].text },
+      { id: versesData[2].translationId, text: versesData[2].text }
+    );
+  }, [versesData]);
 
   const handleCopyComparison = async () => {
     if (!versesData || versesData.length === 0) return;
@@ -293,6 +304,72 @@ export function TranslationCompareScreen() {
               </Card>
             );
           })}
+
+          {/* Three-Way Alignment & Similarity Analysis */}
+          {threeWayDiff && (
+            <Card variant="pastelYellow" style={styles.analysisCard}>
+              <TouchableOpacity
+                style={styles.analysisHeader}
+                onPress={() => setShowAnalysis((prev) => !prev)}
+                accessibilityRole="button"
+                accessibilityLabel="Alternar análise léxica das 3 versões"
+              >
+                <View style={styles.analysisTitleRow}>
+                  <Ionicons name="analytics" size={18} color="#B78103" />
+                  <Text style={[styles.analysisTitle, { color: theme.colors.text, fontFamily: 'Nunito_800ExtraBold' }]}>
+                    Concordância & Similaridade (3 Versões)
+                  </Text>
+                </View>
+                <Ionicons
+                  name={showAnalysis ? 'chevron-up' : 'chevron-down'}
+                  size={18}
+                  color={theme.colors.textMuted}
+                />
+              </TouchableOpacity>
+
+              {showAnalysis && (
+                <View style={styles.analysisBody}>
+                  <Text style={[styles.analysisSubtitle, { color: theme.colors.textSecondary, fontFamily: 'Nunito_700Bold' }]}>
+                    Índice de Similaridade de Vocabulário
+                  </Text>
+                  <View style={styles.similarityRow}>
+                    <View style={[styles.similarityPill, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                      <Text style={[styles.similarityText, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+                        {versesData?.[0]?.translationId} ↔ {versesData?.[1]?.translationId}: {Math.round(threeWayDiff.similarityScore.firstToSecond * 100)}%
+                      </Text>
+                    </View>
+                    <View style={[styles.similarityPill, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                      <Text style={[styles.similarityText, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+                        {versesData?.[0]?.translationId} ↔ {versesData?.[2]?.translationId}: {Math.round(threeWayDiff.similarityScore.firstToThird * 100)}%
+                      </Text>
+                    </View>
+                    <View style={[styles.similarityPill, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                      <Text style={[styles.similarityText, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+                        {versesData?.[1]?.translationId} ↔ {versesData?.[2]?.translationId}: {Math.round(threeWayDiff.similarityScore.secondToThird * 100)}%
+                      </Text>
+                    </View>
+                  </View>
+
+                  {threeWayDiff.commonTokens.length > 0 && (
+                    <View style={styles.tokensSection}>
+                      <Text style={[styles.tokensLabel, { color: theme.colors.textMuted, fontFamily: 'Nunito_600SemiBold' }]}>
+                        Vocabulário comum às 3 traduções ({threeWayDiff.commonTokens.length} termos):
+                      </Text>
+                      <View style={styles.tokenChipsWrap}>
+                        {threeWayDiff.commonTokens.slice(0, 15).map((tok, i) => (
+                          <View key={i} style={[styles.tokenChip, { backgroundColor: theme.colors.cardPastelGreen }]}>
+                            <Text style={[styles.tokenChipText, { color: '#1B5E20', fontFamily: 'Nunito_600SemiBold' }]}>
+                              {tok}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+                </View>
+              )}
+            </Card>
+          )}
         </ScrollView>
       )}
 
@@ -450,5 +527,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   diffEqual: {},
+  analysisCard: {
+    marginTop: 10,
+    padding: 14,
+    borderRadius: 14,
+  },
+  analysisHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  analysisTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  analysisTitle: {
+    fontSize: 14,
+  },
+  analysisBody: {
+    marginTop: 12,
+    gap: 10,
+  },
+  analysisSubtitle: {
+    fontSize: 12,
+  },
+  similarityRow: {
+    flexDirection: 'column',
+    gap: 6,
+  },
+  similarityPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  similarityText: {
+    fontSize: 12,
+  },
+  tokensSection: {
+    gap: 6,
+    marginTop: 4,
+  },
+  tokensLabel: {
+    fontSize: 12,
+  },
+  tokenChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  tokenChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  tokenChipText: {
+    fontSize: 11,
+  },
 });
 

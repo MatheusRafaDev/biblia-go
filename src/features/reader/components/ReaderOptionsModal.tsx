@@ -17,6 +17,7 @@ interface ReaderOptionsModalProps {
   onOpenAi: () => void;
   onOpenCloud: () => void;
   onCopyChapter: () => void;
+  onStartAudio?: () => void;
 }
 
 export function ReaderOptionsModal({
@@ -25,6 +26,7 @@ export function ReaderOptionsModal({
   onOpenAi,
   onOpenCloud,
   onCopyChapter,
+  onStartAudio,
 }: ReaderOptionsModalProps) {
   const theme = useAppTheme();
   const themePreference = useThemeStore((s) => s.preference);
@@ -141,6 +143,31 @@ export function ReaderOptionsModal({
             </View>
             <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} />
           </TouchableOpacity>
+
+          {/* Audio Narration Action */}
+          {onStartAudio && (
+            <TouchableOpacity
+              style={[styles.optionRow, { borderBottomColor: theme.colors.border }]}
+              onPress={() => {
+                onClose();
+                onStartAudio();
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Ouvir leitura em áudio do capítulo"
+            >
+              <View style={styles.rowLabelGroup}>
+                <Ionicons name="volume-medium-outline" size={20} color={theme.colors.primary} />
+                <Text style={[styles.rowLabel, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+                  Ouvir Capítulo (Áudio)
+                </Text>
+              </View>
+              <View style={[styles.badge, { backgroundColor: theme.colors.cardPastelYellow }]}>
+                <Text style={[styles.badgeText, { color: '#B78103', fontFamily: 'Nunito_700Bold' }]}>
+                  Voz & Áudio
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
 
           {/* AI Assistant */}
           <TouchableOpacity

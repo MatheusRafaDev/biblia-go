@@ -30,11 +30,39 @@ export function FavoritesModal({ visible, onClose }: FavoritesModalProps) {
   const [activeColorFilter, setActiveColorFilter] = useState<string>('todos');
   const [editingFavId, setEditingFavId] = useState<number | null>(null);
   const [noteText, setNoteText] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const filtered = favorites?.filter((f) => {
-    if (activeColorFilter === 'todos') return true;
-    return f.highlight_color === activeColorFilter;
+    const matchesColor = activeColorFilter === 'todos' || f.highlight_color === activeColorFilter;
+    if (!matchesColor) return false;
+    if (searchQuery.trim().length === 0) return true;
+    const book = BOOKS_BY_ID.get(f.book_id);
+    const bookName = book?.name.toLowerCase() ?? '';
+    const note = f.note?.toLowerCase() ?? '';
+    const q = searchQuery.toLowerCase().trim();
+    return note.includes(q) || bookName.includes(q);
   });
+
+  const handleExportNotes = async () => {
+    if (!favorites || favorites.length === 0) return;
+    const lines = ['# Minhas Anotações de Estudo - Bíblia Go', ''];
+    for (const fav of favorites) {
+      const book = BOOKS_BY_ID.get(fav.book_id);
+      const ref = `${book?.name ?? 'Livro'} ${fav.chapter}:${fav.verse}`;
+      lines.push(`## ${ref} (${fav.translation_id})`);
+      if (fav.note) {
+        lines.push(`> 📝 ${fav.note}`);
+      }
+      lines.push('');
+    }
+    const output = lines.join('\n');
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(output);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
 
   const handleOpenPassage = (item: DbFavorite) => {
     goToPassage(item.book_id, item.chapter, item.verse);
@@ -64,15 +92,39 @@ export function FavoritesModal({ visible, onClose }: FavoritesModalProps) {
           <Text style={[styles.title, { color: theme.colors.text, fontFamily: 'Nunito_800ExtraBold' }]}>
             Versículos Destacados ({filtered?.length ?? 0})
           </Text>
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.closeBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Fechar favoritos"
-          >
-            <Ionicons name="close" size={26} color={theme.colors.text} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.exportBtn, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }]}
+              onPress={handleExportNotes}
+              accessibilityRole="button"
+              accessibilityLabel="Exportar todas as anotações em Markdown"
+            >
+              <Ionicons name="share-outline" size={15} color={theme.colors.primary} />
+              <Text style={[styles.exportBtnText, { color: theme.colors.primary, fontFamily: 'Nunito_700Bold' }]}>
+                Exportar
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.closeBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar favoritos"
+            >
+              <Ionicons name="close" size={26} color={theme.colors.text} />
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Copy Feedback */}
+        {copied && (
+          <View style={[styles.copyToast, { backgroundColor: theme.colors.cardPastelGreen, borderColor: '#A7F3D0' }]}>
+            <Ionicons name="checkmark-circle" size={16} color="#2E7D32" />
+            <Text style={[styles.copyToastText, { color: '#1B5E20', fontFamily: 'Nunito_700Bold' }]}>
+              Anotações exportadas em Markdown para a área de transferência!
+            </Text>
+          </View>
+        )}
 
         {/* Color Filters */}
         <View style={styles.filterRow}>
@@ -118,6 +170,24 @@ export function FavoritesModal({ visible, onClose }: FavoritesModalProps) {
               accessibilityLabel={`Filtrar cor ${c.label}`}
             />
           ))}
+        </View>
+
+        {/* Search Input Box */}
+        <View style={[styles.searchBox, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <Ionicons name="search" size={18} color={theme.colors.textMuted} style={styles.searchIcon} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Buscar por anotação ou livro..."
+            placeholderTextColor={theme.colors.textMuted}
+            style={[styles.searchInput, { color: theme.colors.text, fontFamily: 'Nunito_400Regular' }]}
+            clearButtonMode="while-editing"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Limpar busca">
+              <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* List */}
@@ -227,11 +297,56 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  exportBtnText: {
+    fontSize: 12,
+  },
   closeBtn: {
-    minWidth: 44,
-    minHeight: 44,
+    minWidth: 40,
+    minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  copyToast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
+  copyToastText: {
+    fontSize: 13,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 6,
+    paddingHorizontal: 12,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  searchIcon: {
+    marginRight: 6,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
   },
   filterRow: {
     flexDirection: 'row',

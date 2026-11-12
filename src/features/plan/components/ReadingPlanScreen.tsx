@@ -23,11 +23,13 @@ import {
 import { ReadingNotificationService } from '../services/notificationService';
 import { CANONICAL_BOOKS } from '@/src/shared/constants/books';
 import { getEarnedMilestones, getNextMilestone } from '../utils/streakMilestones';
+import { CreateCustomPlanModal } from './CreateCustomPlanModal';
 
 export function ReadingPlanScreen() {
   const theme = useAppTheme();
   const [activePlanId, setActivePlanId] = useState<string>('nt_90_days');
   const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [createPlanModalVisible, setCreatePlanModalVisible] = useState(false);
   const goToPassage = useReaderStore((s) => s.goToPassage);
 
   const { data: plans } = useReadingPlans();
@@ -72,6 +74,17 @@ export function ReadingPlanScreen() {
         <Text style={[styles.title, { color: theme.colors.text, fontFamily: 'Nunito_800ExtraBold' }]}>
           Planos de Leitura
         </Text>
+        <TouchableOpacity
+          style={[styles.newPlanBtn, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }]}
+          onPress={() => setCreatePlanModalVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Criar novo plano de leitura personalizado"
+        >
+          <Ionicons name="add" size={18} color={theme.colors.primary} />
+          <Text style={[styles.newPlanBtnText, { color: theme.colors.primary, fontFamily: 'Nunito_700Bold' }]}>
+            Novo Plano
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -258,6 +271,12 @@ export function ReadingPlanScreen() {
           </View>
         )}
       </ScrollView>
+
+      <CreateCustomPlanModal
+        visible={createPlanModalVisible}
+        onClose={() => setCreatePlanModalVisible(false)}
+        onPlanCreated={(newPlanId) => setActivePlanId(newPlanId)}
+      />
     </SafeAreaView>
   );
 }
@@ -267,12 +286,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
   },
   title: {
     fontSize: 22,
+  },
+  newPlanBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  newPlanBtnText: {
+    fontSize: 13,
   },
   content: {
     padding: 16,

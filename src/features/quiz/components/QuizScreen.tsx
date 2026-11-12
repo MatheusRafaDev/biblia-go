@@ -134,6 +134,23 @@ export function QuizScreen() {
             </View>
           </Card>
 
+          {/* Rank Title & Mastery Card */}
+          <Card variant="pastelBlue" style={styles.rankCard}>
+            <View style={styles.rankRow}>
+              <Ionicons name="ribbon-outline" size={30} color={theme.colors.primary} />
+              <View style={styles.rankTextGroup}>
+                <Text style={[styles.rankTitle, { color: theme.colors.text, fontFamily: 'Nunito_800ExtraBold' }]}>
+                  Nível Bíblico: {getRankTitle(stats?.highestScore ?? 0)}
+                </Text>
+                <Text style={[styles.rankSub, { color: theme.colors.textSecondary, fontFamily: 'Nunito_400Regular' }]}>
+                  {stats?.totalGames
+                    ? `${stats.totalGames} partidas concluídas • Recorde: ${stats.highestScore} pts`
+                    : 'Complete quizzes para desbloquear patamares de conhecimento bíblico!'}
+                </Text>
+              </View>
+            </View>
+          </Card>
+
           {/* Categories Section */}
           <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
             Escolha uma Categoria
@@ -257,6 +274,16 @@ export function QuizScreen() {
               </Text>
             </View>
           </View>
+
+          {/* Streak bonus banner */}
+          {currentStreak >= 2 && (
+            <View style={[styles.streakBanner, { backgroundColor: '#FEF8E7', borderColor: '#F59E0B' }]}>
+              <Ionicons name="flame" size={20} color="#D97706" />
+              <Text style={[styles.streakBannerText, { color: '#B45309', fontFamily: 'Nunito_700Bold' }]}>
+                Sequência de {currentStreak} acertos seguidos! Multiplicador de bônus ativo 🔥
+              </Text>
+            </View>
+          )}
 
           {/* Question Card */}
           <Card variant="surface" style={styles.questionCard}>
@@ -395,6 +422,38 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     padding: 16,
+  },
+  rankCard: {
+    padding: 14,
+    borderRadius: 14,
+  },
+  rankRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  rankTextGroup: {
+    flex: 1,
+    gap: 2,
+  },
+  rankTitle: {
+    fontSize: 15,
+  },
+  rankSub: {
+    fontSize: 12,
+  },
+  streakBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  streakBannerText: {
+    fontSize: 13,
+    flex: 1,
   },
   statsRow: {
     flexDirection: 'row',

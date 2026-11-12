@@ -51,5 +51,25 @@ describe('ReadingPlanRepository', () => {
     const finalProgress = await repo.getPlanProgress('nt_90_days');
     expect(finalProgress.completedDays).toBe(1);
   });
+
+  it('deve criar um plano de leitura personalizado e persistir dias e leituras', async () => {
+    await repo.createCustomPlan({
+      id: 'custom_teste_30',
+      title: 'Plano Personalizado de Teste',
+      description: '30 dias de leitura bíblica',
+      totalDays: 30,
+      readings: [
+        { day: 1, passage: 'Gênesis 1-2' },
+        { day: 2, passage: 'Gênesis 3-4' },
+      ],
+    });
+
+    const plans = await repo.getPlans();
+    expect(plans.map((p) => p.id)).toContain('custom_teste_30');
+
+    const readings = await repo.getDayReadings('custom_teste_30');
+    expect(readings.length).toBe(2);
+    expect(readings[0].passage_reference).toBe('Gênesis 1-2');
+  });
 });
 

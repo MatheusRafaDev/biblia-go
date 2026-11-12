@@ -24,6 +24,7 @@ import { CloudSyncModal } from './CloudSyncModal';
 import { AiAssistantModal } from './AiAssistantModal';
 import { DailyVerseModal } from '@/src/features/daily/components/DailyVerseModal';
 import { ReaderOptionsModal } from './ReaderOptionsModal';
+import { AudioReaderBar } from './AudioReaderBar';
 import { TranslationBanner } from './TranslationBanner';
 import { LoadingState, EmptyState } from '@/src/shared/components/FeedbackStates';
 import { estimateReadingTimeMinutes, formatReadingTime } from '../utils/readingTime';
@@ -47,6 +48,8 @@ export function BibleReader() {
   const [dailyVerseModalVisible, setDailyVerseModalVisible] = useState(false);
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [activeAudioVerse, setActiveAudioVerse] = useState<number | null>(null);
 
   const currentTranslation = useReaderStore((s) => s.currentTranslation);
 
@@ -232,7 +235,7 @@ export function BibleReader() {
                 isFavorited={favoritesMap.has(v.verse)}
                 highlightColor={favInfo?.color}
                 note={favInfo?.note}
-                isTarget={targetVerse === v.verse}
+                isTarget={targetVerse === v.verse || activeAudioVerse === v.verse}
               />
             );
           })}
@@ -323,7 +326,22 @@ export function BibleReader() {
         onOpenAi={() => setAiModalVisible(true)}
         onOpenCloud={() => setCloudSyncModalVisible(true)}
         onCopyChapter={handleCopyChapter}
+        onStartAudio={() => setAudioPlaying(true)}
       />
+
+      {/* Floating Audio Chapter Player */}
+      {audioPlaying && verses && verses.length > 0 && (
+        <AudioReaderBar
+          verses={verses}
+          bookName={currentBook.name}
+          chapter={currentChapter}
+          onActiveVerseChange={(vNum) => setActiveAudioVerse(vNum)}
+          onClose={() => {
+            setAudioPlaying(false);
+            setActiveAudioVerse(null);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
