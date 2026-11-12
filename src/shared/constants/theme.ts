@@ -57,6 +57,8 @@ export const themeLight = {
     tabBarBorder: palette.borderLight,
     tabBarActive: palette.bluePrimary,
     tabBarInactive: palette.navySubtle,
+    highContrastText: '#100E26',
+    focusOutline: '#2A5CDD',
   },
 };
 
@@ -82,6 +84,8 @@ export const themeDark = {
     tabBarBorder: palette.darkBorder,
     tabBarActive: palette.darkBluePrimary,
     tabBarInactive: palette.darkTextMuted,
+    highContrastText: '#FFFFFF',
+    focusOutline: '#7DA2FF',
   },
 };
 
