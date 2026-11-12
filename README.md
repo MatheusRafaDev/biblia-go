@@ -84,29 +84,43 @@ biblia-go/
 
 ## 🚀 Como Executar
 
-### 1. Instalar dependências
+### 1. Aplicativo Mobile / Web (Expo)
 ```bash
+# Instalar dependências
 npm install
-```
 
-### 2. Rodar a suíte de testes unitários
-```bash
+# Rodar todos os testes unitários (Mobile + Back-end)
 npm test
-```
 
-### 3. Iniciar o aplicativo Expo
-```bash
+# Iniciar o servidor de desenvolvimento Expo
 npx expo start
 ```
 - Pressione `w` para rodar na versão **Web**.
 - Pressione `a` para abrir no emulador **Android**.
 - Pressione `i` para abrir no simulador **iOS**.
 
-### 4. Validação de Tipos e Linter
+### 2. Back-end Fastify (Node + TypeScript + Docker)
 ```bash
-npm run typecheck   # npx tsc --noEmit
-npm run lint        # npx expo lint
+# Rodar o servidor em desenvolvimento local
+npm run server:dev
+
+# Rodar os testes de integração da API Fastify
+npm run server:test
+
+# Build TypeScript do servidor
+npm run server:build
+
+# Subir com Docker Compose
+docker compose up --build
 ```
+A API estará disponível em `http://localhost:3333/api` com os endpoints:
+- `GET  /api/health` — Health check da API
+- `POST /api/auth/register` — Cadastro de usuário com hash bcrypt e token JWT
+- `POST /api/auth/login` — Autenticação e emissão de JWT
+- `GET  /api/auth/me` — Perfil do usuário logado (protegido por JWT)
+- `POST /api/sync` — Sincronização em nuvem de favoritos e progresso de leitura
+- `GET  /api/search/semantic?q=ansiedade` — Busca semântica por temas com pontuação de similaridade
+- `POST /api/ai/chat` — Assistente bíblico RAG com respostas fundamentadas e citações exatas de versículos
 
 ---
 
