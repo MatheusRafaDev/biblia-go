@@ -7,8 +7,8 @@ import {
   TextInput,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/src/shared/hooks/useTheme';
 import { CANONICAL_BOOKS, BibleBook } from '@/src/shared/constants/books';

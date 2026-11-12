@@ -1,6 +1,9 @@
+import type { QuizDifficulty } from '../utils/quizScoring';
+
 export interface QuizQuestion {
   id: string;
   category: 'geral' | 'antigo_testamento' | 'novo_testamento' | 'personagens';
+  difficulty?: QuizDifficulty;
   question: string;
   options: string[];
   correctIndex: number;

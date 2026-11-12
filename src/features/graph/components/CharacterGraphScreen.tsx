@@ -5,10 +5,10 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
   TextInput,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Line, Circle, Text as SvgText, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -27,12 +27,19 @@ export function CharacterGraphScreen() {
 
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterNode | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTestament, setSelectedTestament] = useState<'ALL' | 'OT' | 'NT'>('ALL');
   const [zoomLevel, setZoomLevel] = useState(1);
 
-  const filteredCharacters = THEOGRAPHIC_CHARACTERS.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCharacters = THEOGRAPHIC_CHARACTERS.filter((c) => {
+    const matchesSearch =
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTestament =
+      selectedTestament === 'ALL' || c.testament === selectedTestament;
+    return matchesSearch && matchesTestament;
+  });
+
+  const activeIds = new Set(filteredCharacters.map((c) => c.id));
 
   const nodesMap = new Map<string, CharacterNode>(
     THEOGRAPHIC_CHARACTERS.map((c) => [c.id, c])
@@ -103,6 +110,66 @@ export function CharacterGraphScreen() {
         )}
       </View>
 
+      {/* Testament Filter Chips */}
+      <View style={styles.filterRow}>
+        <TouchableOpacity
+          style={[
+            styles.filterChip,
+            selectedTestament === 'ALL' && [styles.filterChipActive, { backgroundColor: theme.colors.primary }],
+            { borderColor: theme.colors.border },
+          ]}
+          onPress={() => setSelectedTestament('ALL')}
+          accessibilityRole="button"
+        >
+          <Text
+            style={[
+              styles.filterChipText,
+              { color: selectedTestament === 'ALL' ? '#FFFFFF' : theme.colors.text, fontFamily: 'Nunito_700Bold' },
+            ]}
+          >
+            Todos ({THEOGRAPHIC_CHARACTERS.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.filterChip,
+            selectedTestament === 'OT' && [styles.filterChipActive, { backgroundColor: theme.colors.primary }],
+            { borderColor: theme.colors.border },
+          ]}
+          onPress={() => setSelectedTestament('OT')}
+          accessibilityRole="button"
+        >
+          <Text
+            style={[
+              styles.filterChipText,
+              { color: selectedTestament === 'OT' ? '#FFFFFF' : theme.colors.text, fontFamily: 'Nunito_700Bold' },
+            ]}
+          >
+            Antigo Testamento
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.filterChip,
+            selectedTestament === 'NT' && [styles.filterChipActive, { backgroundColor: theme.colors.primary }],
+            { borderColor: theme.colors.border },
+          ]}
+          onPress={() => setSelectedTestament('NT')}
+          accessibilityRole="button"
+        >
+          <Text
+            style={[
+              styles.filterChipText,
+              { color: selectedTestament === 'NT' ? '#FFFFFF' : theme.colors.text, fontFamily: 'Nunito_700Bold' },
+            ]}
+          >
+            Novo Testamento
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Interactive SVG Canvas */}
       <ScrollView
         horizontal
@@ -118,24 +185,26 @@ export function CharacterGraphScreen() {
                 const targetNode = nodesMap.get(edge.target);
                 if (!sourceNode || !targetNode) return null;
 
+                const isEdgeActive = activeIds.has(edge.source) && activeIds.has(edge.target);
+
                 return (
-                  <G key={edge.id}>
-                    <Line
-                      x1={sourceNode.x}
-                      y1={sourceNode.y}
-                      x2={targetNode.x}
-                      y2={targetNode.y}
-                      stroke={theme.isDark ? '#4F4B72' : '#C7C2DD'}
-                      strokeWidth={3}
-                      strokeDasharray="4 4"
-                    />
-                  </G>
+                  <Line
+                    key={edge.id}
+                    x1={sourceNode.x}
+                    y1={sourceNode.y}
+                    x2={targetNode.x}
+                    y2={targetNode.y}
+                    stroke={isEdgeActive ? (theme.isDark ? '#60A5FA' : '#3B6EF5') : (theme.isDark ? '#334155' : '#E2E8F0')}
+                    strokeWidth={isEdgeActive ? 2.5 : 1}
+                    strokeDasharray={edge.relationship === 'irmao_de' ? '4,4' : undefined}
+                    opacity={isEdgeActive ? 0.9 : 0.25}
+                  />
                 );
               })}
 
               {/* Nodes */}
               {THEOGRAPHIC_CHARACTERS.map((node) => {
-                const isMatch = filteredCharacters.some((c) => c.id === node.id);
+                const isMatch = activeIds.has(node.id);
                 return (
                   <G
                     key={node.id}
@@ -145,20 +214,20 @@ export function CharacterGraphScreen() {
                     <Circle
                       cx={node.x}
                       cy={node.y}
-                      r={32}
+                      r={isMatch ? 28 : 22}
                       fill={node.color}
-                      stroke={theme.isDark ? '#FFFFFF' : '#26244A'}
-                      strokeWidth={node.id === 'jesus' ? 3 : 1.5}
+                      stroke={theme.colors.surface}
+                      strokeWidth={3}
                     />
                     <SvgText
                       x={node.x}
-                      y={node.y + 4}
-                      fill="#1E1C38"
-                      fontSize={13}
+                      y={node.y + 5}
+                      fontSize={11}
                       fontWeight="bold"
+                      fill="#26244A"
                       textAnchor="middle"
                     >
-                      {node.name.length > 8 ? node.name.slice(0, 7) + '.' : node.name}
+                      {node.name}
                     </SvgText>
                   </G>
                 );
@@ -168,76 +237,68 @@ export function CharacterGraphScreen() {
         </ScrollView>
       </ScrollView>
 
-      {/* Character Details Modal */}
+      {/* Detail Modal */}
       {selectedCharacter && (
         <Modal
-          visible={Boolean(selectedCharacter)}
-          animationType="slide"
-          presentationStyle="pageSheet"
+          visible
+          transparent
+          animationType="fade"
           onRequestClose={() => setSelectedCharacter(null)}
         >
-          <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
-              <View style={styles.modalHeaderInfo}>
-                <Text style={[styles.modalName, { color: theme.colors.text, fontFamily: 'Nunito_800ExtraBold' }]}>
-                  {selectedCharacter.name}
-                </Text>
-                <Text style={[styles.modalTitle, { color: theme.colors.primary, fontFamily: 'Nunito_700Bold' }]}>
-                  {selectedCharacter.title}
-                </Text>
+          <View style={styles.modalOverlay}>
+            <Card variant="surface" style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <View style={styles.modalTitleGroup}>
+                  <Text style={[styles.modalTitle, { color: theme.colors.text, fontFamily: 'Nunito_800ExtraBold' }]}>
+                    {selectedCharacter.name}
+                  </Text>
+                  <Text style={[styles.modalSub, { color: theme.colors.primary, fontFamily: 'Nunito_700Bold' }]}>
+                    {selectedCharacter.title}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.modalCloseBtn}
+                  onPress={() => setSelectedCharacter(null)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Fechar detalhes"
+                >
+                  <Ionicons name="close" size={24} color={theme.colors.text} />
+                </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                onPress={() => setSelectedCharacter(null)}
-                style={styles.closeBtn}
-                accessibilityRole="button"
-                accessibilityLabel="Fechar detalhes do personagem"
-              >
-                <Ionicons name="close" size={26} color={theme.colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
-              {/* Bio Card */}
-              <Card variant="surface" style={styles.bioCard}>
-                <Text style={[styles.bioLabel, { color: theme.colors.textMuted, fontFamily: 'Nunito_700Bold' }]}>
-                  HISTÓRIA & SIGNIFICADO
-                </Text>
-                <Text style={[styles.bioText, { color: theme.colors.text, fontFamily: 'Nunito_400Regular' }]}>
-                  {selectedCharacter.bio}
-                </Text>
-              </Card>
-
-              {/* Related Key Verses */}
-              <Text style={[styles.versesSectionTitle, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
-                Passagens Bíblicas Relacionadas
+              <Text style={[styles.modalBio, { color: theme.colors.text, fontFamily: 'Nunito_400Regular' }]}>
+                {selectedCharacter.bio}
               </Text>
 
-              {selectedCharacter.keyVerses.map((v, i) => (
-                <Card key={i} variant="pastelBlue" style={styles.verseCard}>
-                  <View style={styles.verseCardHeader}>
-                    <Text style={[styles.verseRef, { color: theme.colors.primary, fontFamily: 'Nunito_700Bold' }]}>
-                      {v.bookName} {v.chapter}:{v.verse}
-                    </Text>
-                    <TouchableOpacity
-                      style={[styles.readVerseBtn, { backgroundColor: theme.colors.primary }]}
-                      onPress={() => handleOpenVerseInReader(v.bookId, v.chapter, v.verse)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Ler ${v.bookName} ${v.chapter}:${v.verse} no leitor`}
-                    >
-                      <Text style={[styles.readVerseText, { color: '#FFFFFF', fontFamily: 'Nunito_700Bold' }]}>
-                        Ler no Leitor
+              {/* Key Verses */}
+              <Text style={[styles.versesTitle, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+                Versículos Chave:
+              </Text>
+
+              <ScrollView style={styles.versesScroll}>
+                {selectedCharacter.keyVerses.map((v) => (
+                  <TouchableOpacity
+                    key={`${v.bookId}-${v.chapter}-${v.verse}`}
+                    style={[styles.verseItem, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
+                    onPress={() => handleOpenVerseInReader(v.bookId, v.chapter, v.verse)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Abrir ${v.bookName} ${v.chapter}:${v.verse} no leitor`}
+                  >
+                    <View style={styles.verseRefRow}>
+                      <Text style={[styles.verseRef, { color: theme.colors.primary, fontFamily: 'Nunito_700Bold' }]}>
+                        {v.bookName} {v.chapter}:{v.verse}
                       </Text>
-                      <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={[styles.verseQuote, { color: theme.colors.text, fontFamily: 'Nunito_400Regular' }]}>
-                    {`"${v.text}"`}
-                  </Text>
-                </Card>
-              ))}
-            </ScrollView>
-          </SafeAreaView>
+                      <Ionicons name="open-outline" size={16} color={theme.colors.primary} />
+                    </View>
+                    <Text style={[styles.verseQuote, { color: theme.colors.text, fontFamily: 'Nunito_400Regular' }]}>
+                      &ldquo;{v.text}&rdquo;
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </Card>
+          </View>
         </Modal>
       )}
     </SafeAreaView>
@@ -271,9 +332,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   zoomBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -281,101 +342,108 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
     marginHorizontal: 16,
-    marginVertical: 10,
-    minHeight: 46,
+    marginTop: 10,
+    marginBottom: 6,
+    paddingHorizontal: 12,
+    minHeight: 42,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  filterChipActive: {
+    borderWidth: 0,
+  },
+  filterChipText: {
+    fontSize: 12,
   },
   canvasContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
+    padding: 16,
+    alignItems: 'center',
   },
   canvasWrapper: {
-    alignItems: 'center',
-    paddingVertical: 20,
+    width: 400,
+    height: 1280,
   },
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxHeight: '80%',
+    padding: 20,
+    borderRadius: 16,
+    gap: 12,
   },
   modalHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
   },
-  modalHeaderInfo: {
+  modalTitleGroup: {
     flex: 1,
   },
-  modalName: {
-    fontSize: 24,
-  },
   modalTitle: {
-    fontSize: 15,
+    fontSize: 22,
+  },
+  modalSub: {
+    fontSize: 14,
     marginTop: 2,
   },
-  closeBtn: {
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
+  modalCloseBtn: {
+    padding: 4,
   },
-  modalContent: {
-    padding: 16,
-    gap: 16,
-    paddingBottom: 40,
-  },
-  bioCard: {
-    padding: 18,
-    gap: 8,
-  },
-  bioLabel: {
-    fontSize: 12,
-  },
-  bioText: {
+  modalBio: {
     fontSize: 15,
-    lineHeight: 24,
+    lineHeight: 22,
   },
-  versesSectionTitle: {
-    fontSize: 17,
-    marginTop: 6,
+  versesTitle: {
+    fontSize: 15,
+    marginTop: 8,
   },
-  verseCard: {
-    padding: 16,
-    gap: 10,
+  versesScroll: {
+    maxHeight: 200,
   },
-  verseCardHeader: {
+  verseItem: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
+    gap: 6,
+  },
+  verseRefRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   verseRef: {
-    fontSize: 15,
-  },
-  readVerseBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    minHeight: 38,
-    borderRadius: 19,
-  },
-  readVerseText: {
-    fontSize: 13,
+    fontSize: 14,
   },
   verseQuote: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 18,
     fontStyle: 'italic',
   },
 });

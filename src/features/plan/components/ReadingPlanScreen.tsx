@@ -5,10 +5,10 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
   Switch,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAppTheme } from '@/src/shared/hooks/useTheme';
@@ -22,6 +22,7 @@ import {
 } from '../hooks/useReadingPlan';
 import { ReadingNotificationService } from '../services/notificationService';
 import { CANONICAL_BOOKS } from '@/src/shared/constants/books';
+import { getEarnedMilestones, getNextMilestone } from '../utils/streakMilestones';
 
 export function ReadingPlanScreen() {
   const theme = useAppTheme();
@@ -33,6 +34,11 @@ export function ReadingPlanScreen() {
   const { data: progress } = useReadingPlanProgress(activePlanId);
   const { data: dayReadings, isLoading } = usePlanDayReadings(activePlanId);
   const toggleDayMutation = useToggleDayCompleted(activePlanId);
+
+  const streak = progress?.streak ?? 0;
+  const earnedMilestones = getEarnedMilestones(streak);
+  const latestMilestone = earnedMilestones[earnedMilestones.length - 1];
+  const nextMilestoneInfo = getNextMilestone(streak);
 
   const handleToggleReminder = async (val: boolean) => {
     setReminderEnabled(val);
@@ -132,6 +138,23 @@ export function ReadingPlanScreen() {
           <Text style={[styles.percentLabel, { color: theme.colors.textMuted, fontFamily: 'Nunito_700Bold' }]}>
             {progress?.percent ?? 0}% Concluído
           </Text>
+
+          {/* Active Milestone & Next Target */}
+          {latestMilestone && (
+            <View style={[styles.milestoneRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+              <Text style={styles.milestoneIcon}>{latestMilestone.icon}</Text>
+              <View style={styles.milestoneTextGroup}>
+                <Text style={[styles.milestoneTitle, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+                  {latestMilestone.title} ({latestMilestone.daysRequired} dias)
+                </Text>
+                <Text style={[styles.milestoneDesc, { color: theme.colors.textSecondary, fontFamily: 'Nunito_400Regular' }]}>
+                  {nextMilestoneInfo
+                    ? `Faltam ${nextMilestoneInfo.daysRemaining} dias para ${nextMilestoneInfo.nextMilestone.title} ${nextMilestoneInfo.nextMilestone.icon}`
+                    : '🏆 Nível Máximo de Sequência Conquistado!'}
+                </Text>
+              </View>
+            </View>
+          )}
         </Card>
 
         {/* Daily Reminder Card */}
@@ -310,6 +333,28 @@ const styles = StyleSheet.create({
   percentLabel: {
     fontSize: 12,
     textAlign: 'right',
+  },
+  milestoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  milestoneIcon: {
+    fontSize: 24,
+  },
+  milestoneTextGroup: {
+    flex: 1,
+    gap: 2,
+  },
+  milestoneTitle: {
+    fontSize: 13,
+  },
+  milestoneDesc: {
+    fontSize: 11,
   },
   reminderCard: {
     flexDirection: 'row',

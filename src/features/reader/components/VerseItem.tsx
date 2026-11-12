@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Share } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAppTheme } from '@/src/shared/hooks/useTheme';
 import { useReaderStore } from '@/src/shared/stores/useReaderStore';
-import { useCurrentBook, useToggleFavorite } from '../hooks/useBibleReader';
+import { useCurrentBook, useToggleFavorite, useUpdateFavoriteNote } from '../hooks/useBibleReader';
 
 interface VerseItemProps {
   verseNumber: number;
   text: string;
   isFavorited?: boolean;
   highlightColor?: string | null;
+  note?: string | null;
   isTarget?: boolean;
 }
 
@@ -26,6 +27,7 @@ export function VerseItem({
   text,
   isFavorited = false,
   highlightColor,
+  note,
   isTarget = false,
 }: VerseItemProps) {
   const theme = useAppTheme();
@@ -35,7 +37,10 @@ export function VerseItem({
   const currentBook = useCurrentBook();
 
   const toggleFavoriteMutation = useToggleFavorite();
+  const updateNoteMutation = useUpdateFavoriteNote();
   const [showActions, setShowActions] = useState(false);
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(note || '');
 
   const activeColor = highlightColor || (isFavorited ? '#FFF59D' : undefined);
 
@@ -46,6 +51,24 @@ export function VerseItem({
 
   const handleToggle = () => {
     setShowActions((prev) => !prev);
+    setShowNoteInput(false);
+  };
+
+  const handleSaveNote = () => {
+    if (!isFavorited) {
+      toggleFavoriteMutation.mutate({
+        verse: verseNumber,
+        color: activeColor || '#FFF59D',
+      });
+    }
+    updateNoteMutation.mutate({
+      bookId: currentBook.id,
+      chapter: currentChapter,
+      verse: verseNumber,
+      note: noteDraft.trim(),
+    });
+    setShowNoteInput(false);
+    setShowActions(false);
   };
 
   const handleShare = async () => {
@@ -77,8 +100,8 @@ export function VerseItem({
         activeOpacity={0.7}
         onPress={handleToggle}
         accessibilityRole="button"
-        accessibilityLabel={`Versículo ${verseNumber}: ${text}`}
-        accessibilityHint="Toque para destacar, copiar ou comparar traduções"
+        accessibilityLabel={`Versículo ${verseNumber}: ${text}${note ? `. Anotação: ${note}` : ''}`}
+        accessibilityHint="Toque para destacar, anotar, copiar ou comparar traduções"
         style={[
           styles.verseRow,
           activeColor && !theme.isDark && { backgroundColor: activeColor + '80' },
@@ -102,6 +125,11 @@ export function VerseItem({
         >
           {verseNumber}{' '}
         </Text>
+
+        {note && (
+          <Ionicons name="document-text" size={13} color={theme.colors.primary} style={styles.noteIndicator} />
+        )}
+
         <Text
           style={[
             styles.verseText,
@@ -117,6 +145,22 @@ export function VerseItem({
         </Text>
       </TouchableOpacity>
 
+      {/* Render Note card if exists */}
+      {note && (
+        <View style={[styles.savedNoteCard, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
+          <View style={styles.noteHeader}>
+            <Ionicons name="create-outline" size={13} color={theme.colors.primary} />
+            <Text style={[styles.noteAuthor, { color: theme.colors.primary, fontFamily: 'Nunito_700Bold' }]}>
+              Anotação de Estudo
+            </Text>
+          </View>
+          <Text style={[styles.noteContent, { color: theme.colors.text, fontFamily: 'Nunito_400Regular' }]}>
+            {note}
+          </Text>
+        </View>
+      )}
+
+      {/* Actions Bar */}
       {showActions && (
         <View
           style={[
@@ -156,6 +200,7 @@ export function VerseItem({
                   onPress={() => {
                     toggleFavoriteMutation.mutate({ verse: verseNumber });
                     setShowActions(false);
+                    setShowNoteInput(false);
                   }}
                   accessibilityLabel="Remover destaque"
                   accessibilityRole="button"
@@ -166,7 +211,7 @@ export function VerseItem({
             </View>
           </View>
 
-          {/* Additional Quick Actions: Share & Compare */}
+          {/* Quick Buttons: Share, Compare, Note */}
           <View style={styles.actionsBottomRow}>
             <TouchableOpacity
               style={[styles.quickButton, { backgroundColor: theme.colors.surfaceMuted }]}
@@ -191,7 +236,76 @@ export function VerseItem({
                 Comparar
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.quickButton,
+                { backgroundColor: showNoteInput ? theme.colors.primaryLight : theme.colors.surfaceMuted },
+              ]}
+              onPress={() => setShowNoteInput(!showNoteInput)}
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar ou editar anotação"
+            >
+              <Ionicons name="create-outline" size={16} color={showNoteInput ? theme.colors.primary : theme.colors.text} />
+              <Text
+                style={[
+                  styles.quickBtnText,
+                  {
+                    color: showNoteInput ? theme.colors.primary : theme.colors.text,
+                    fontFamily: 'Nunito_700Bold',
+                  },
+                ]}
+              >
+                {note ? 'Editar Nota' : 'Anotar'}
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          {/* Inline Note Editor */}
+          {showNoteInput && (
+            <View style={styles.noteInputContainer}>
+              <TextInput
+                style={[
+                  styles.noteTextInput,
+                  {
+                    color: theme.colors.text,
+                    borderColor: theme.colors.border,
+                    backgroundColor: theme.colors.surfaceMuted,
+                  },
+                ]}
+                placeholder="Escreva sua reflexão sobre este versículo..."
+                placeholderTextColor={theme.colors.textMuted}
+                multiline
+                numberOfLines={3}
+                value={noteDraft}
+                onChangeText={setNoteDraft}
+                autoFocus
+              />
+              <View style={styles.noteActionsRow}>
+                <TouchableOpacity
+                  style={[styles.saveNoteBtn, { backgroundColor: theme.colors.primary }]}
+                  onPress={handleSaveNote}
+                  accessibilityRole="button"
+                  accessibilityLabel="Salvar anotação"
+                >
+                  <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                  <Text style={[styles.saveNoteText, { color: '#FFFFFF', fontFamily: 'Nunito_700Bold' }]}>
+                    Salvar Nota
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.cancelNoteBtn, { borderColor: theme.colors.border }]}
+                  onPress={() => setShowNoteInput(false)}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.cancelNoteText, { color: theme.colors.textMuted, fontFamily: 'Nunito_600SemiBold' }]}>
+                    Cancelar
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -215,8 +329,33 @@ const styles = StyleSheet.create({
     marginRight: 4,
     lineHeight: 24,
   },
+  noteIndicator: {
+    marginRight: 4,
+  },
   verseText: {
     flexShrink: 1,
+  },
+  savedNoteCard: {
+    marginTop: 4,
+    marginHorizontal: 12,
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 4,
+  },
+  noteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  noteAuthor: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  noteContent: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   actionsBar: {
     paddingHorizontal: 12,
@@ -240,15 +379,15 @@ const styles = StyleSheet.create({
   quickButton: {
     flex: 1,
     flexDirection: 'row',
-    minHeight: 44,
+    minHeight: 40,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
   },
   quickBtnText: {
-    fontSize: 13,
+    fontSize: 12,
   },
   actionsLabel: {
     fontSize: 13,
@@ -276,5 +415,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 6,
   },
+  noteInputContainer: {
+    marginTop: 6,
+    gap: 8,
+  },
+  noteTextInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 8,
+    height: 70,
+    fontSize: 13,
+    textAlignVertical: 'top',
+  },
+  noteActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  saveNoteBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 36,
+    borderRadius: 8,
+    gap: 6,
+  },
+  saveNoteText: {
+    fontSize: 13,
+  },
+  cancelNoteBtn: {
+    paddingHorizontal: 12,
+    minHeight: 36,
+    borderWidth: 1,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelNoteText: {
+    fontSize: 13,
+  },
 });
-

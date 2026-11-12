@@ -11,6 +11,7 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DatabaseProvider, useDatabase } from '@/src/shared/db/client';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/src/shared/hooks/useTheme';
 import { LoadingState, ErrorState } from '@/src/shared/components/FeedbackStates';
 import { BibleSyncService } from '@/src/features/reader/services/bibleSyncService';
@@ -79,10 +80,12 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <DatabaseProvider>
-        <AppContent />
-      </DatabaseProvider>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <DatabaseProvider>
+          <AppContent />
+        </DatabaseProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }

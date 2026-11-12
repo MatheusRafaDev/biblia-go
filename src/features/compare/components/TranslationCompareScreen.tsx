@@ -5,9 +5,9 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useAppTheme } from '@/src/shared/hooks/useTheme';
@@ -17,6 +17,7 @@ import { computeWordDiff, DiffToken } from '@/src/shared/utils/textDiff';
 import { useCompareVerses } from '../hooks/useCompareVerses';
 import { ComparePassageSelectorModal } from './ComparePassageSelectorModal';
 import { Card } from '@/src/shared/components/Card';
+import { formatComparisonClipboard } from '../utils/formatCompareSummary';
 
 export function TranslationCompareScreen() {
   const theme = useAppTheme();
@@ -30,6 +31,7 @@ export function TranslationCompareScreen() {
   const [selectedTranslations, setSelectedTranslations] = useState<string[]>(['ACF11', 'ARA', 'KJV']);
   const [showDiffHighlights, setShowDiffHighlights] = useState(true);
   const [selectorVisible, setSelectorVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const currentBook = BOOKS_BY_ID.get(bookId) ?? BOOKS_BY_ID.get(1)!;
 
@@ -39,6 +41,17 @@ export function TranslationCompareScreen() {
     verse,
     selectedTranslations
   );
+
+  const handleCopyComparison = async () => {
+    if (!versesData || versesData.length === 0) return;
+    const refStr = `${currentBook.name} ${chapter}:${verse}`;
+    const text = formatComparisonClipboard(refStr, versesData);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
 
   const handleToggleTranslation = (tId: string) => {
     if (selectedTranslations.includes(tId)) {
@@ -113,7 +126,7 @@ export function TranslationCompareScreen() {
           <Ionicons name="chevron-down" size={16} color={theme.colors.primary} />
         </TouchableOpacity>
 
-        {/* Stepper buttons */}
+        {/* Stepper buttons & Copy action */}
         <View style={styles.stepperGroup}>
           <TouchableOpacity
             style={[styles.stepperBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
@@ -133,8 +146,27 @@ export function TranslationCompareScreen() {
           >
             <Ionicons name="chevron-forward" size={20} color={theme.colors.text} />
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.stepperBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+            onPress={handleCopyComparison}
+            accessibilityRole="button"
+            accessibilityLabel="Copiar comparação de versões"
+          >
+            <Ionicons name={copied ? 'checkmark-circle' : 'copy-outline'} size={18} color={copied ? '#2E7D32' : theme.colors.text} />
+          </TouchableOpacity>
         </View>
       </View>
+
+      {/* Copy Feedback */}
+      {copied && (
+        <View style={[styles.copyToast, { backgroundColor: theme.colors.cardPastelGreen, borderColor: '#A7F3D0' }]}>
+          <Ionicons name="checkmark-circle" size={16} color="#2E7D32" />
+          <Text style={[styles.copyToastText, { color: '#1B5E20', fontFamily: 'Nunito_700Bold' }]}>
+            Comparação copiada para a área de transferência!
+          </Text>
+        </View>
+      )}
 
       {/* Translations selector chips */}
       <View style={styles.chipsContainer}>
@@ -317,6 +349,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  copyToast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
+  copyToastText: {
+    fontSize: 13,
   },
   chipsContainer: {
     paddingHorizontal: 16,

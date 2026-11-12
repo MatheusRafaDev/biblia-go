@@ -5,13 +5,14 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/src/shared/hooks/useTheme';
 import { Card } from '@/src/shared/components/Card';
 import { QUIZ_QUESTIONS, QuizQuestion } from '../data/questions';
 import { useQuizStats, useQuizHistory, useSaveQuizResult } from '../hooks/useQuiz';
+import { calculateQuizPoints, getRankTitle, QuizDifficulty } from '../utils/quizScoring';
 
 type QuizMode = 'home' | 'playing' | 'result';
 
@@ -24,6 +25,8 @@ export function QuizScreen() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
   const [score, setScore] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [isAnswered, setIsAnswered] = useState(false);
 
   const { data: stats } = useQuizStats();
@@ -42,6 +45,8 @@ export function QuizScreen() {
     setCurrentQuestionIndex(0);
     setSelectedAnswerIndex(null);
     setScore(0);
+    setCorrectCount(0);
+    setCurrentStreak(0);
     setIsAnswered(false);
     setMode('playing');
   };
@@ -52,7 +57,18 @@ export function QuizScreen() {
     setIsAnswered(true);
 
     if (index === currentQuestion.correctIndex) {
-      setScore((prev) => prev + 1);
+      const nextStreak = currentStreak + 1;
+      const pts = calculateQuizPoints({
+        basePoints: 10,
+        difficulty: (currentQuestion.difficulty as QuizDifficulty) || 'facil',
+        currentStreak: nextStreak,
+        timeSpentSeconds: 5,
+      });
+      setScore((prev) => prev + pts.totalPoints);
+      setCurrentStreak(nextStreak);
+      setCorrectCount((prev) => prev + 1);
+    } else {
+      setCurrentStreak(0);
     }
   };
 
@@ -63,10 +79,9 @@ export function QuizScreen() {
       setIsAnswered(false);
     } else {
       // Game ended
-      const finalScore = selectedAnswerIndex === currentQuestion.correctIndex ? score : score;
       saveResultMutation.mutate({
         category: selectedCategory,
-        score: finalScore,
+        score,
         totalQuestions: activeQuestions.length,
       });
       setMode('result');
@@ -332,17 +347,15 @@ export function QuizScreen() {
       {mode === 'result' && (
         <View style={styles.resultContainer}>
           <Card variant="pastelYellow" style={styles.resultCard}>
-            <Ionicons name="trophy" size={64} color="#B78103" />
+            <Ionicons name="trophy" size={60} color="#B78103" />
             <Text style={[styles.resultTitle, { color: theme.colors.text, fontFamily: 'Nunito_800ExtraBold' }]}>
-              Parabéns!
+              {getRankTitle(score)}
             </Text>
             <Text style={[styles.resultScore, { color: theme.colors.primary, fontFamily: 'Nunito_800ExtraBold' }]}>
-              {score} / {activeQuestions.length}
+              {score} Pontos
             </Text>
             <Text style={[styles.resultSub, { color: theme.colors.textSecondary, fontFamily: 'Nunito_600SemiBold' }]}>
-              {score >= activeQuestions.length * 0.7
-                ? 'Excelente conhecimento bíblico! Continue assim.'
-                : 'Bom jogo! Continue lendo a Palavra para aprender ainda mais.'}
+              {correctCount} de {activeQuestions.length} perguntas corretas ({Math.round((correctCount / activeQuestions.length) * 100)}%)
             </Text>
 
             <TouchableOpacity
