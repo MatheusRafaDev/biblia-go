@@ -27,3 +27,4 @@ export function formatDailyVerseShare(verse: DailyVerse): string {
     `#BibliaGo #VersiculoDoDia #Devocional`,
   ].join('\n');
 }
+

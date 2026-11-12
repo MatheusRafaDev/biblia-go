@@ -40,3 +40,4 @@ describe('updateRecentPassages', () => {
     expect(list[4].bookId).toBe(6);
   });
 });
+

@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { getDatabase } from '../../db/client.js';
 
 const chatRequestSchema = z.object({
-  question: z.string().min(2, 'Pergunta muito curta'),
-  contextPassage: z.string().optional(),
+  question: z.string().trim().min(2, 'Pergunta muito curta').max(500, 'Pergunta muito longa'),
+  contextPassage: z.string().trim().max(1000).optional(),
 });
 
 export async function aiRoutes(app: FastifyInstance) {
@@ -37,23 +37,38 @@ export async function aiRoutes(app: FastifyInstance) {
       .prepare('SELECT id, theme, keywords, book_id, book_name, chapter, verse, text FROM semantic_themes')
       .all() as unknown as ThemeRow[];
 
+    // Normalize query
+    const normalizedQuery = `${question} ${contextPassage || ''}`
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    const queryWords = normalizedQuery
+      .split(/\s+/)
+      .map((w) => w.trim())
+      .filter((w) => w.length > 2);
+
     // Match question keywords against knowledge base
-    const query = `${question} ${contextPassage || ''}`.toLowerCase();
     const matches = allThemes.filter((t) => {
-      const tokens = `${t.theme} ${t.keywords} ${t.text}`.toLowerCase();
-      return query.split(/\s+/).some((qWord) => qWord.length > 2 && tokens.includes(qWord));
+      const tokens = `${t.theme} ${t.keywords} ${t.text}`
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+      return queryWords.some((qWord) => tokens.includes(qWord));
     });
 
-    const relevantVerses = matches.length > 0 ? matches.slice(0, 2) : allThemes.slice(0, 1);
-
+    const isDirectMatch = matches.length > 0;
+    const relevantVerses = isDirectMatch ? matches.slice(0, 2) : allThemes.slice(0, 1);
     const primaryVerse = relevantVerses[0];
 
-    // Formulate a structured, pastorally sound and context-grounded explanation
-    const answer =
-      `À luz das Escrituras Sagradas, a resposta para sua dúvida encontra fundamento em ${primaryVerse.book_name} ${primaryVerse.chapter}:${primaryVerse.verse}. ` +
-      `O texto bíblico declara: "${primaryVerse.text}". ` +
-      `Este princípio nos ensina sobre a providência, fidelidade e o amor soberano de Deus diante dos desafios da vida cristã. ` +
-      `Lembre-se de meditar continuamente nessa promessa em oração.`;
+    const answer = isDirectMatch
+      ? `À luz das Escrituras Sagradas, a resposta para sua dúvida encontra fundamento em ${primaryVerse.book_name} ${primaryVerse.chapter}:${primaryVerse.verse}. ` +
+        `O texto bíblico declara: "${primaryVerse.text}". ` +
+        `Este princípio nos ensina sobre a providência, fidelidade e o amor soberano de Deus diante dos desafios da vida cristã. ` +
+        `Lembre-se de meditar continuamente nessa promessa em oração.`
+      : `Embora sua consulta abranja um tema amplo, as Escrituras nos orientam a manter os olhos firmes nas promessas divinas. ` +
+        `Em ${primaryVerse.book_name} ${primaryVerse.chapter}:${primaryVerse.verse}, a Palavra nos instrui: "${primaryVerse.text}". ` +
+        `Busque a orientação do Senhor em oração e continue examinando os textos bíblicos.`;
 
     const citations = relevantVerses.map((v) => ({
       bookId: v.book_id,
@@ -66,7 +81,7 @@ export async function aiRoutes(app: FastifyInstance) {
     return reply.send({
       answer,
       citations,
-      confidence: 0.94,
+      confidence: isDirectMatch ? 0.95 : 0.72,
     });
   });
 }

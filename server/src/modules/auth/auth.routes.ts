@@ -5,14 +5,14 @@ import crypto from 'node:crypto';
 import { getDatabase } from '../../db/client.js';
 
 const registerSchema = z.object({
-  name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  name: z.string().trim().min(2, 'Nome deve ter no mínimo 2 caracteres').max(100, 'Nome muito longo'),
+  email: z.string().trim().toLowerCase().email('Email inválido'),
+  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres').max(100, 'Senha muito longa'),
 });
 
 const loginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string(),
+  email: z.string().trim().toLowerCase().email('Email inválido'),
+  password: z.string().min(1, 'Senha obrigatória'),
 });
 
 export async function authRoutes(app: FastifyInstance) {
@@ -30,8 +30,8 @@ export async function authRoutes(app: FastifyInstance) {
 
     const { name, email, password } = parsed.data;
 
-    // Check if email already registered
-    const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    // Check if email already registered (case-insensitive check)
+    const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?)').get(email);
     if (existing) {
       return reply.status(409).send({ error: 'Email já cadastrado' });
     }
@@ -46,7 +46,7 @@ export async function authRoutes(app: FastifyInstance) {
       passwordHash
     );
 
-    const token = app.jwt.sign({ sub: userId, name, email });
+    const token = app.jwt.sign({ sub: userId, name, email }, { expiresIn: '7d' });
 
     return reply.status(201).send({
       user: { id: userId, name, email },
@@ -73,7 +73,10 @@ export async function authRoutes(app: FastifyInstance) {
       password_hash: string;
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as UserRow | undefined;
+    const user = db
+      .prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)')
+      .get(email) as UserRow | undefined;
+
     if (!user) {
       return reply.status(401).send({ error: 'Email ou senha incorretos' });
     }
@@ -83,7 +86,10 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.status(401).send({ error: 'Email ou senha incorretos' });
     }
 
-    const token = app.jwt.sign({ sub: user.id, name: user.name, email: user.email });
+    const token = app.jwt.sign(
+      { sub: user.id, name: user.name, email: user.email },
+      { expiresIn: '7d' }
+    );
 
     return reply.send({
       user: { id: user.id, name: user.name, email: user.email },
@@ -102,7 +108,10 @@ export async function authRoutes(app: FastifyInstance) {
       created_at: string;
     }
 
-    const user = db.prepare('SELECT id, name, email, created_at FROM users WHERE id = ?').get(userPayload.sub) as UserRow | undefined;
+    const user = db
+      .prepare('SELECT id, name, email, created_at FROM users WHERE id = ?')
+      .get(userPayload.sub) as UserRow | undefined;
+
     if (!user) {
       return reply.status(404).send({ error: 'Usuário não encontrado' });
     }

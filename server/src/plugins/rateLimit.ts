@@ -18,12 +18,35 @@ const rateLimitPluginAsync: FastifyPluginAsync<RateLimitOptions> = async (
 ) => {
   const maxRequests = options.maxRequests ?? 100;
   const windowMs = options.windowMs ?? 60_000;
-  const whitelist = new Set(options.whitelist ?? ['/health']);
+  const whitelist = new Set(options.whitelist ?? ['/api/health', '/health']);
 
   const buckets = new Map<string, ClientBucket>();
 
+  // Periodic cleanup to avoid memory leak with abandoned IPs
+  const cleanupInterval = setInterval(() => {
+    const now = Date.now();
+    for (const [key, b] of buckets.entries()) {
+      if (now >= b.resetAt) {
+        buckets.delete(key);
+      }
+    }
+  }, 60_000);
+
+  // Do not hold Node process alive on shutdown
+  const timer = cleanupInterval as unknown as { unref?: () => void };
+  if (typeof timer.unref === 'function') {
+    timer.unref();
+  }
+
+  fastify.addHook('onClose', async () => {
+    clearInterval(cleanupInterval);
+    buckets.clear();
+  });
+
   fastify.addHook('onRequest', async (req: FastifyRequest, reply: FastifyReply) => {
-    if (whitelist.has(req.url)) {
+    const routeUrl = req.routeOptions?.url;
+    // Check whitelist against raw url or configured route pattern
+    if (whitelist.has(req.url) || (routeUrl && whitelist.has(routeUrl))) {
       return;
     }
 

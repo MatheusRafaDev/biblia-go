@@ -144,3 +144,4 @@ export const DAILY_VERSES: DailyVerse[] = [
     prayer: 'Deus de bondade, descanso nos Teus propósitos perfeitos e renovo minha esperança.',
   },
 ];
+

@@ -31,3 +31,4 @@ describe('dailyVerse utils', () => {
     expect(formatted).toContain('#BibliaGo');
   });
 });
+

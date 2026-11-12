@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { getDatabase } from '../../db/client.js';
 
 const searchParamsSchema = z.object({
-  q: z.string().min(1, 'Termo de busca obrigatório'),
-  limit: z.coerce.number().min(1).max(50).default(10),
+  q: z.string().trim().min(1, 'Termo de busca obrigatório'),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
 });
 
 export async function searchRoutes(app: FastifyInstance) {
@@ -21,11 +21,14 @@ export async function searchRoutes(app: FastifyInstance) {
     }
 
     const { q, limit } = parsed.data;
-    const queryTerms = q
+    const normalizedQ = q
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    const queryTerms = normalizedQ
       .split(/\s+/)
+      .map((t) => t.trim())
       .filter((t) => t.length > 1);
 
     interface ThemeRow {
@@ -44,35 +47,52 @@ export async function searchRoutes(app: FastifyInstance) {
       .all() as unknown as ThemeRow[];
 
     // Compute semantic relevance score based on query keywords matching theme and verse text
-    const scored = allThemes.map((row) => {
-      const targetText = `${row.theme} ${row.keywords} ${row.text}`
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '');
+    const scored = allThemes
+      .map((row) => {
+        const normalizedTheme = row.theme
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
 
-      let matches = 0;
-      for (const term of queryTerms) {
-        if (targetText.includes(term)) {
-          matches++;
+        const targetText = `${normalizedTheme} ${row.keywords} ${row.text}`
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+
+        let matches = 0;
+        for (const term of queryTerms) {
+          if (targetText.includes(term)) {
+            matches++;
+          }
         }
-      }
 
-      // Base similarity score
-      let score = matches > 0 ? 0.65 + (matches / Math.max(queryTerms.length, 1)) * 0.3 : 0.45;
-      if (row.theme.includes(q.toLowerCase())) {
-        score = Math.min(score + 0.15, 0.98);
-      }
+        const isThemeMatch =
+          normalizedTheme.includes(normalizedQ) || normalizedQ.includes(normalizedTheme);
 
-      return {
-        bookId: row.book_id,
-        bookName: row.book_name,
-        chapter: row.chapter,
-        verse: row.verse,
-        text: row.text,
-        similarityScore: Math.round(score * 100) / 100,
-        themeTags: [row.theme, ...row.keywords.split(' ').slice(0, 3)],
-      };
-    });
+        if (matches === 0 && !isThemeMatch) {
+          return null;
+        }
+
+        let score = 0.5;
+        if (isThemeMatch) {
+          score = 0.85 + (matches / Math.max(queryTerms.length, 1)) * 0.12;
+        } else {
+          score = 0.65 + (matches / Math.max(queryTerms.length, 1)) * 0.25;
+        }
+
+        score = Math.min(Math.max(score, 0.5), 0.99);
+
+        return {
+          bookId: row.book_id,
+          bookName: row.book_name,
+          chapter: row.chapter,
+          verse: row.verse,
+          text: row.text,
+          similarityScore: Math.round(score * 100) / 100,
+          themeTags: [row.theme, ...row.keywords.split(' ').slice(0, 3)],
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
 
     // Sort by highest similarity
     scored.sort((a, b) => b.similarityScore - a.similarityScore);

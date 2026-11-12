@@ -7,9 +7,33 @@ export function getDatabase(): DatabaseSync {
   if (!dbInstance) {
     const dbPath = env.NODE_ENV === 'test' ? ':memory:' : env.DATABASE_PATH;
     dbInstance = new DatabaseSync(dbPath);
+
+    // Enforce SQLite integrity and concurrency pragmas
+    dbInstance.exec(`
+      PRAGMA foreign_keys = ON;
+      PRAGMA busy_timeout = 5000;
+    `);
+
+    if (dbPath !== ':memory:') {
+      dbInstance.exec(`
+        PRAGMA journal_mode = WAL;
+        PRAGMA synchronous = NORMAL;
+      `);
+    }
+
     initSchema(dbInstance);
   }
   return dbInstance;
+}
+
+export function checkpointDatabase(): void {
+  if (dbInstance && env.NODE_ENV !== 'test') {
+    try {
+      dbInstance.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+    } catch {
+      // Ignored if in-memory or already checkpointed
+    }
+  }
 }
 
 export function resetTestDatabase(): void {
@@ -64,6 +88,12 @@ function initSchema(db: DatabaseSync): void {
       verse INTEGER NOT NULL,
       text TEXT NOT NULL
     );
+
+    -- Performance indexes
+    CREATE INDEX IF NOT EXISTS idx_fav_user_id ON user_favorites(user_id);
+    CREATE INDEX IF NOT EXISTS idx_fav_updated ON user_favorites(updated_at);
+    CREATE INDEX IF NOT EXISTS idx_progress_user_id ON user_reading_progress(user_id);
+    CREATE INDEX IF NOT EXISTS idx_semantic_theme ON semantic_themes(theme);
   `);
 
   // Seed semantic biblical themes for search & RAG
