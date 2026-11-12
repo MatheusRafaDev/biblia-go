@@ -24,10 +24,23 @@ export function BookSelectorModal({ visible, onClose }: BookSelectorModalProps) 
   const currentBookId = useReaderStore((s) => s.currentBookId);
   const currentChapter = useReaderStore((s) => s.currentChapter);
   const goToPassage = useReaderStore((s) => s.goToPassage);
+  const recentPassages = useReaderStore((s) => s.recentPassages);
 
   const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null);
   const [activeTestament, setActiveTestament] = useState<'OT' | 'NT'>('OT');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const recentItems = useMemo(() => {
+    return recentPassages
+      .map((rp) => {
+        const book = CANONICAL_BOOKS.find((b) => b.id === rp.bookId);
+        return book ? { ...rp, bookName: book.name } : null;
+      })
+      .filter(
+        (rp): rp is { bookId: number; chapter: number; timestamp: number; bookName: string } =>
+          rp !== null
+      );
+  }, [recentPassages]);
 
   const filteredBooks = useMemo(() => {
     return CANONICAL_BOOKS.filter((b) => {
@@ -151,6 +164,63 @@ export function BookSelectorModal({ visible, onClose }: BookSelectorModalProps) 
                 clearButtonMode="while-editing"
               />
             </View>
+
+            {/* Recent Passages Quick Chips */}
+            {searchQuery.trim().length === 0 && recentItems.length > 0 && (
+              <View style={styles.recentSection}>
+                <View style={styles.recentHeader}>
+                  <Ionicons name="time-outline" size={14} color={theme.colors.textMuted} />
+                  <Text style={[styles.recentTitle, { color: theme.colors.textMuted, fontFamily: 'Nunito_600SemiBold' }]}>
+                    Recentes
+                  </Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.recentScroll}
+                >
+                  {recentItems.map((item) => (
+                    <TouchableOpacity
+                      key={`${item.bookId}-${item.chapter}`}
+                      style={[
+                        styles.recentChip,
+                        {
+                          backgroundColor:
+                            item.bookId === currentBookId && item.chapter === currentChapter
+                              ? theme.colors.primaryLight
+                              : theme.colors.surface,
+                          borderColor:
+                            item.bookId === currentBookId && item.chapter === currentChapter
+                              ? theme.colors.primary
+                              : theme.colors.border,
+                        },
+                      ]}
+                      onPress={() => {
+                        goToPassage(item.bookId, item.chapter);
+                        handleClose();
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Ir para ${item.bookName} capítulo ${item.chapter}`}
+                    >
+                      <Text
+                        style={[
+                          styles.recentChipText,
+                          {
+                            color:
+                              item.bookId === currentBookId && item.chapter === currentChapter
+                                ? theme.colors.primary
+                                : theme.colors.text,
+                            fontFamily: 'Nunito_600SemiBold',
+                          },
+                        ]}
+                      >
+                        {item.bookName} {item.chapter}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
             {/* Testament Filter Tabs */}
             {searchQuery.trim().length === 0 && (
@@ -380,5 +450,33 @@ const styles = StyleSheet.create({
   },
   chapterNumber: {
     fontSize: 17,
+  },
+  recentSection: {
+    marginBottom: 12,
+  },
+  recentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 6,
+    paddingHorizontal: 2,
+  },
+  recentTitle: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  recentScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  recentChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  recentChipText: {
+    fontSize: 13,
   },
 });

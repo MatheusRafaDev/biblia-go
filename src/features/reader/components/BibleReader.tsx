@@ -22,6 +22,7 @@ import { TranslationPickerModal } from './TranslationPickerModal';
 import { FavoritesModal } from './FavoritesModal';
 import { CloudSyncModal } from './CloudSyncModal';
 import { AiAssistantModal } from './AiAssistantModal';
+import { DailyVerseModal } from '@/src/features/daily/components/DailyVerseModal';
 import { TranslationBanner } from './TranslationBanner';
 import { LoadingState, EmptyState } from '@/src/shared/components/FeedbackStates';
 
@@ -44,6 +45,7 @@ export function BibleReader() {
   const [favoritesModalVisible, setFavoritesModalVisible] = useState(false);
   const [cloudSyncModalVisible, setCloudSyncModalVisible] = useState(false);
   const [aiModalVisible, setAiModalVisible] = useState(false);
+  const [dailyVerseModalVisible, setDailyVerseModalVisible] = useState(false);
   const currentTranslation = useReaderStore((s) => s.currentTranslation);
 
   const { data: verses, isLoading } = useChapterVerses();
@@ -123,6 +125,15 @@ export function BibleReader() {
 
         {/* Action icons */}
         <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setDailyVerseModalVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Versículo do Dia e Devocional Diário"
+          >
+            <Ionicons name="heart-outline" size={21} color="#E11D48" />
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => setAiModalVisible(true)}
@@ -288,6 +299,11 @@ export function BibleReader() {
       <AiAssistantModal
         visible={aiModalVisible}
         onClose={() => setAiModalVisible(false)}
+      />
+
+      <DailyVerseModal
+        visible={dailyVerseModalVisible}
+        onClose={() => setDailyVerseModalVisible(false)}
       />
     </SafeAreaView>
   );

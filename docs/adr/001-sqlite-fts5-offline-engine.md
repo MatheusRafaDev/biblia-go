@@ -25,3 +25,4 @@ A camada de acesso ao banco segue o padrão Repository (`BibleRepository`), gara
 
 ### Negativas / Mitigações
 - Espaço em disco adicional para o índice FTS5 (~8MB por tradução completa). Mitigado pelo download sob demanda de traduções adicionais.
+

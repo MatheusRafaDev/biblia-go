@@ -145,3 +145,4 @@ docker compose up -d --build
 # Inspecionar logs da API
 docker compose logs -f server
 ```
+

@@ -94,3 +94,6 @@ export class OfflineRequestQueue {
     };
   }
 }
+
+export const offlineQueue = new OfflineRequestQueue();
+

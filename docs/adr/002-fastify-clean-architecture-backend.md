@@ -24,3 +24,4 @@ Adotamos o **Fastify** com **TypeScript em modo strict**, validação via **Zod*
 
 ### Negativas / Mitigações
 - Ecossistema de plugins ligeiramente diferente do Express. Mitigado usando plugins padrão (`@fastify/cors`, `@fastify/jwt`) e plugins customizados limpos.
+

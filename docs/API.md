@@ -271,3 +271,4 @@ Todas as respostas de erro seguem o padrão RFC 7807 / Fastify:
 | `404` | Not Found | Recurso não localizado |
 | `429` | Too Many Requests | Limite de requisições por IP atingido (Rate Limit) |
 | `500` | Internal Server Error | Erro inesperado no processamento do servidor |
+

@@ -5,6 +5,36 @@ O versionamento segue os padrões de [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.1.0] - 2026-11-12
+
+### ✨ Novas Funcionalidades e Melhorias de Experiência
+
+#### 🕒 Histórico de Leitura Recente
+- Gerenciamento inteligente no store Zustand das últimas passagens bíblicas lidas com desduplicação automática e ordenação cronológica.
+- Barra de chips rápidos (*Recentes*) integrada diretamente no topo do seletor de livros e capítulos, permitindo alternância instantânea com um toque.
+
+#### ☀️ Versículo do Dia & Devocional Diário
+- Novo modal devocional acolhedor acessível pelo leitor, com seleção determinística por dia do ano baseada em temas essenciais (Paz, Ansiedade, Esperança, Fé, Sabedoria).
+- Exibição de texto bíblico, reflexão prática para a vida cotidiana, oração do dia guiada e botão de compartilhamento formatado para redes sociais e mensagens.
+- Atalho *"Ler no Contexto"* que abre diretamente o livro e capítulo no versículo em destaque.
+
+#### 💡 Busca Semântica por Temas na UI
+- Novo seletor de abas no modal de busca: **FTS5 Offline (Palavra Exata)** vs. **Semântica & Temas (IA Fastify)**.
+- Pílulas de temas populares (*Ansiedade, Esperança, Perdão, Paz, etc.*) para busca rápida com um toque.
+- Indicador percentual de relevância e tags temáticas com navegação direta para as passagens bíblicas.
+
+#### 💾 Central de Dados, Backup Local & Fila Offline
+- Interface visual na Central de Dados para exportação completa dos favoritos, progresso de leitura e pontuações de quiz para JSON.
+- Importação e restauração com validação de esquema em tempo real via Zod.
+- Monitoramento da **Fila Offline de Sincronização** com ações para processamento forçado e descarte seguro.
+
+#### 🧪 Qualidade & Testes
+- Adição de testes unitários para o Versículo do Dia (`dailyVerse.test.ts`) e Histórico Recente (`recentPassages.test.ts`).
+- Suíte total expandida para **91 testes automatizados (100% de aprovação no Vitest)**.
+- 0 erros e 0 warnings no `expo lint` e `tsc --noEmit`.
+
+---
+
 ## [1.0.0] - 2026-11-12
 
 ### 🎉 Lançamento da Versão Inicial (MVP + Backend Fase 2)
@@ -53,3 +83,4 @@ O versionamento segue os padrões de [Semantic Versioning](https://semver.org/).
 - GitHub Actions CI/CD automatizado cobrindo linting, typechecking, testes e build Docker.
 - 85 testes automatizados com 100% de aprovação no Vitest.
 - Documentação completa da API REST e Architecture Decision Records (ADRs).
+

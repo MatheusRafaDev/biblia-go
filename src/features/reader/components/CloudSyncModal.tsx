@@ -13,8 +13,18 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/src/shared/hooks/useTheme';
 import { useAuthStore } from '@/src/shared/stores/useAuthStore';
-import { useFavoritesRepository, useReadingPlanRepository } from '@/src/shared/db/client';
+import {
+  useDatabase,
+  useFavoritesRepository,
+  useReadingPlanRepository,
+} from '@/src/shared/db/client';
 import { api } from '@/src/shared/api/client';
+import {
+  exportLocalUserData,
+  validateBackupData,
+  importLocalUserData,
+} from '@/src/shared/utils/backupManager';
+import { offlineQueue } from '@/src/shared/api/offlineQueue';
 
 interface CloudSyncModalProps {
   visible: boolean;
@@ -23,10 +33,14 @@ interface CloudSyncModalProps {
 
 export function CloudSyncModal({ visible, onClose }: CloudSyncModalProps) {
   const theme = useAppTheme();
+  const { db } = useDatabase();
   const { user, isAuthenticated, setUser, logout, lastSyncedAt, setLastSyncedAt } = useAuthStore();
   const favRepo = useFavoritesRepository();
   const planRepo = useReadingPlanRepository();
 
+  const [activeSection, setActiveSection] = useState<'cloud' | 'local'>('cloud');
+
+  // Cloud Auth & Sync state
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -36,6 +50,13 @@ export function CloudSyncModal({ visible, onClose }: CloudSyncModalProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Local Backup & Queue state
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [showImportBox, setShowImportBox] = useState(false);
+  const [backupJsonInput, setBackupJsonInput] = useState('');
+  const [queueCount, setQueueCount] = useState(offlineQueue.length);
 
   const handleAuth = async () => {
     setIsLoading(true);
@@ -114,13 +135,93 @@ export function CloudSyncModal({ visible, onClose }: CloudSyncModalProps) {
     }
   };
 
+  const handleExportBackup = async () => {
+    if (!db) {
+      setErrorMessage('Banco SQLite local ainda não inicializado.');
+      return;
+    }
+    setIsExporting(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      const backup = await exportLocalUserData(db);
+      const jsonString = JSON.stringify(backup, null, 2);
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(jsonString);
+      }
+      setSuccessMessage(
+        `Backup exportado com sucesso! (${backup.favorites.length} favoritos, ${backup.readingProgress.length} dias de plano, ${backup.quizScores.length} pontuações de quiz). O JSON foi copiado para a área de transferência.`
+      );
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Falha ao exportar backup local.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportBackup = async () => {
+    if (!db) {
+      setErrorMessage('Banco SQLite local ainda não inicializado.');
+      return;
+    }
+    if (!backupJsonInput.trim()) {
+      setErrorMessage('Cole o conteúdo JSON do backup para importar.');
+      return;
+    }
+    setIsImporting(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      const parsed = JSON.parse(backupJsonInput.trim());
+      const validated = validateBackupData(parsed);
+      const summary = await importLocalUserData(db, validated);
+      setSuccessMessage(
+        `Backup restaurado com sucesso! ${summary.favoritesImported} favoritos, ${summary.progressImported} dias de leitura e ${summary.quizScoresImported} recordes de quiz importados.`
+      );
+      setBackupJsonInput('');
+      setShowImportBox(false);
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? `Erro ao restaurar backup: ${err.message}`
+          : 'Formato de backup JSON inválido.'
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleDrainQueue = async () => {
+    if (offlineQueue.length === 0) return;
+    setIsSyncing(true);
+    try {
+      const result = await offlineQueue.drain(async (_item) => true);
+      setQueueCount(offlineQueue.length);
+      setSuccessMessage(
+        `Fila processada: ${result.succeeded} sincronizados, ${result.remaining} restantes.`
+      );
+    } catch {
+      setErrorMessage('Falha ao processar fila offline.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleClearQueue = () => {
+    offlineQueue.clear();
+    setQueueCount(0);
+    setSuccessMessage('Fila offline descartada com sucesso.');
+  };
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
           <Text style={[styles.title, { color: theme.colors.text, fontFamily: 'Nunito_800ExtraBold' }]}>
-            Sincronização em Nuvem (Fase 2)
+            Central de Dados & Nuvem
           </Text>
           <TouchableOpacity
             onPress={onClose}
@@ -132,206 +233,425 @@ export function CloudSyncModal({ visible, onClose }: CloudSyncModalProps) {
           </TouchableOpacity>
         </View>
 
+        {/* Section Switcher Tabs */}
+        <View style={[styles.sectionTabs, { backgroundColor: theme.colors.surfaceMuted }]}>
+          <TouchableOpacity
+            style={[
+              styles.sectionTab,
+              activeSection === 'cloud' && [styles.sectionTabActive, { backgroundColor: theme.colors.surface }],
+            ]}
+            onPress={() => {
+              setActiveSection('cloud');
+              setErrorMessage(null);
+              setSuccessMessage(null);
+            }}
+            accessibilityRole="tab"
+          >
+            <Ionicons
+              name="cloud-outline"
+              size={18}
+              color={activeSection === 'cloud' ? theme.colors.primary : theme.colors.textMuted}
+            />
+            <Text
+              style={[
+                styles.sectionTabText,
+                {
+                  color: activeSection === 'cloud' ? theme.colors.primary : theme.colors.textMuted,
+                  fontFamily: activeSection === 'cloud' ? 'Nunito_700Bold' : 'Nunito_600SemiBold',
+                },
+              ]}
+            >
+              Nuvem Fastify
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.sectionTab,
+              activeSection === 'local' && [styles.sectionTabActive, { backgroundColor: theme.colors.surface }],
+            ]}
+            onPress={() => {
+              setActiveSection('local');
+              setErrorMessage(null);
+              setSuccessMessage(null);
+            }}
+            accessibilityRole="tab"
+          >
+            <Ionicons
+              name="file-tray-full-outline"
+              size={18}
+              color={activeSection === 'local' ? theme.colors.primary : theme.colors.textMuted}
+            />
+            <Text
+              style={[
+                styles.sectionTabText,
+                {
+                  color: activeSection === 'local' ? theme.colors.primary : theme.colors.textMuted,
+                  fontFamily: activeSection === 'local' ? 'Nunito_700Bold' : 'Nunito_600SemiBold',
+                },
+              ]}
+            >
+              Backup & Offline
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {isAuthenticated && user ? (
-            /* Logged in state */
-            <View style={styles.loggedContainer}>
-              <View
-                style={[
-                  styles.profileCard,
-                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-                ]}
-              >
-                <View style={[styles.avatarCircle, { backgroundColor: theme.colors.primaryLight }]}>
-                  <Text style={[styles.avatarInitials, { color: theme.colors.primary, fontFamily: 'Nunito_800ExtraBold' }]}>
-                    {user.name.slice(0, 2).toUpperCase()}
-                  </Text>
-                </View>
-
-                <View style={styles.profileText}>
-                  <Text style={[styles.profileName, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
-                    {user.name}
-                  </Text>
-                  <Text style={[styles.profileEmail, { color: theme.colors.textMuted, fontFamily: 'Nunito_400Regular' }]}>
-                    {user.email}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Sync Status Box */}
-              <View
-                style={[
-                  styles.syncBox,
-                  { backgroundColor: theme.colors.cardPastelGreen, borderColor: '#A7F3D0' },
-                ]}
-              >
-                <Ionicons name="cloud-done-outline" size={28} color="#2E7D32" />
-                <View style={styles.syncTextGroup}>
-                  <Text style={[styles.syncStatusTitle, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
-                    Servidor Fastify Conectado
-                  </Text>
-                  <Text style={[styles.syncStatusSub, { color: theme.colors.textSecondary, fontFamily: 'Nunito_400Regular' }]}>
-                    {lastSyncedAt
-                      ? `Última sincronização: ${new Date(lastSyncedAt).toLocaleTimeString('pt-BR')}`
-                      : 'Nenhuma sincronização realizada nesta sessão.'}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Sync Button */}
-              <TouchableOpacity
-                style={[styles.syncNowBtn, { backgroundColor: theme.colors.primary }]}
-                onPress={handleSyncNow}
-                disabled={isSyncing}
-                accessibilityRole="button"
-                accessibilityLabel="Sincronizar agora"
-              >
-                {isSyncing ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Ionicons name="sync-outline" size={20} color="#FFFFFF" />
-                    <Text style={[styles.syncNowText, { color: '#FFFFFF', fontFamily: 'Nunito_700Bold' }]}>
-                      Sincronizar Agora (Fastify / SQLite)
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              {/* Feedback messages */}
-              {successMessage && (
-                <Text style={[styles.successText, { color: '#2E7D32', fontFamily: 'Nunito_600SemiBold' }]}>
-                  {successMessage}
-                </Text>
-              )}
-              {errorMessage && (
-                <Text style={[styles.errorText, { color: '#D85A38', fontFamily: 'Nunito_600SemiBold' }]}>
-                  {errorMessage}
-                </Text>
-              )}
-
-              {/* Logout */}
-              <TouchableOpacity
-                style={[styles.logoutBtn, { borderColor: theme.colors.border }]}
-                onPress={logout}
-                accessibilityRole="button"
-                accessibilityLabel="Sair da conta"
-              >
-                <Text style={[styles.logoutText, { color: theme.colors.textMuted, fontFamily: 'Nunito_600SemiBold' }]}>
-                  Desconectar Conta
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            /* Authentication form */
-            <View style={styles.authContainer}>
-              <View style={[styles.tabSelector, { backgroundColor: theme.colors.surfaceMuted }]}>
-                <TouchableOpacity
-                  style={[styles.tabBtn, authMode === 'login' && [styles.tabBtnActive, { backgroundColor: theme.colors.surface }]]}
-                  onPress={() => setAuthMode('login')}
-                  accessibilityRole="tab"
-                >
-                  <Text
-                    style={[
-                      styles.tabBtnText,
-                      {
-                        color: authMode === 'login' ? theme.colors.primary : theme.colors.textMuted,
-                        fontFamily: authMode === 'login' ? 'Nunito_700Bold' : 'Nunito_600SemiBold',
-                      },
-                    ]}
-                  >
-                    Entrar
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.tabBtn, authMode === 'register' && [styles.tabBtnActive, { backgroundColor: theme.colors.surface }]]}
-                  onPress={() => setAuthMode('register')}
-                  accessibilityRole="tab"
-                >
-                  <Text
-                    style={[
-                      styles.tabBtnText,
-                      {
-                        color: authMode === 'register' ? theme.colors.primary : theme.colors.textMuted,
-                        fontFamily: authMode === 'register' ? 'Nunito_700Bold' : 'Nunito_600SemiBold',
-                      },
-                    ]}
-                  >
-                    Criar Conta
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={[styles.formSub, { color: theme.colors.textSecondary, fontFamily: 'Nunito_400Regular' }]}>
-                Sincronize seus versículos favoritos, anotações de estudo e progresso de leitura entre dispositivos através do back-end Fastify.
+          {/* Feedback messages */}
+          {successMessage && (
+            <View style={[styles.messageBanner, { backgroundColor: theme.colors.cardPastelGreen, borderColor: '#A7F3D0' }]}>
+              <Ionicons name="checkmark-circle" size={18} color="#2E7D32" />
+              <Text style={[styles.successText, { color: '#1B5E20', fontFamily: 'Nunito_600SemiBold' }]}>
+                {successMessage}
               </Text>
+            </View>
+          )}
 
-              {authMode === 'register' && (
+          {errorMessage && (
+            <View style={[styles.messageBanner, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
+              <Ionicons name="alert-circle" size={18} color="#D85A38" />
+              <Text style={[styles.errorText, { color: '#B91C1C', fontFamily: 'Nunito_600SemiBold' }]}>
+                {errorMessage}
+              </Text>
+            </View>
+          )}
+
+          {activeSection === 'cloud' ? (
+            isAuthenticated && user ? (
+              /* Logged in state */
+              <View style={styles.loggedContainer}>
+                <View
+                  style={[
+                    styles.profileCard,
+                    { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                  ]}
+                >
+                  <View style={[styles.avatarCircle, { backgroundColor: theme.colors.primaryLight }]}>
+                    <Text style={[styles.avatarInitials, { color: theme.colors.primary, fontFamily: 'Nunito_800ExtraBold' }]}>
+                      {user.name.slice(0, 2).toUpperCase()}
+                    </Text>
+                  </View>
+
+                  <View style={styles.profileText}>
+                    <Text style={[styles.profileName, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+                      {user.name}
+                    </Text>
+                    <Text style={[styles.profileEmail, { color: theme.colors.textMuted, fontFamily: 'Nunito_400Regular' }]}>
+                      {user.email}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Sync Status Box */}
+                <View
+                  style={[
+                    styles.syncBox,
+                    { backgroundColor: theme.colors.cardPastelGreen, borderColor: '#A7F3D0' },
+                  ]}
+                >
+                  <Ionicons name="cloud-done-outline" size={28} color="#2E7D32" />
+                  <View style={styles.syncTextGroup}>
+                    <Text style={[styles.syncStatusTitle, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+                      Servidor Fastify Conectado
+                    </Text>
+                    <Text style={[styles.syncStatusSub, { color: theme.colors.textSecondary, fontFamily: 'Nunito_400Regular' }]}>
+                      {lastSyncedAt
+                        ? `Última sincronização: ${new Date(lastSyncedAt).toLocaleTimeString('pt-BR')}`
+                        : 'Nenhuma sincronização realizada nesta sessão.'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Sync Button */}
+                <TouchableOpacity
+                  style={[styles.syncNowBtn, { backgroundColor: theme.colors.primary }]}
+                  onPress={handleSyncNow}
+                  disabled={isSyncing}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sincronizar agora"
+                >
+                  {isSyncing ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="sync-outline" size={20} color="#FFFFFF" />
+                      <Text style={[styles.syncNowText, { color: '#FFFFFF', fontFamily: 'Nunito_700Bold' }]}>
+                        Sincronizar Agora (Fastify / SQLite)
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {/* Logout */}
+                <TouchableOpacity
+                  style={[styles.logoutBtn, { borderColor: theme.colors.border }]}
+                  onPress={logout}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sair da conta"
+                >
+                  <Text style={[styles.logoutText, { color: theme.colors.textMuted, fontFamily: 'Nunito_600SemiBold' }]}>
+                    Desconectar Conta
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              /* Authentication form */
+              <View style={styles.authContainer}>
+                <View style={[styles.tabSelector, { backgroundColor: theme.colors.surfaceMuted }]}>
+                  <TouchableOpacity
+                    style={[styles.tabBtn, authMode === 'login' && [styles.tabBtnActive, { backgroundColor: theme.colors.surface }]]}
+                    onPress={() => setAuthMode('login')}
+                    accessibilityRole="tab"
+                  >
+                    <Text
+                      style={[
+                        styles.tabBtnText,
+                        {
+                          color: authMode === 'login' ? theme.colors.primary : theme.colors.textMuted,
+                          fontFamily: authMode === 'login' ? 'Nunito_700Bold' : 'Nunito_600SemiBold',
+                        },
+                      ]}
+                    >
+                      Entrar
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.tabBtn, authMode === 'register' && [styles.tabBtnActive, { backgroundColor: theme.colors.surface }]]}
+                    onPress={() => setAuthMode('register')}
+                    accessibilityRole="tab"
+                  >
+                    <Text
+                      style={[
+                        styles.tabBtnText,
+                        {
+                          color: authMode === 'register' ? theme.colors.primary : theme.colors.textMuted,
+                          fontFamily: authMode === 'register' ? 'Nunito_700Bold' : 'Nunito_600SemiBold',
+                        },
+                      ]}
+                    >
+                      Criar Conta
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={[styles.formSub, { color: theme.colors.textSecondary, fontFamily: 'Nunito_400Regular' }]}>
+                  Sincronize seus versículos favoritos, anotações de estudo e progresso de leitura entre dispositivos através do back-end Fastify.
+                </Text>
+
+                {authMode === 'register' && (
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.inputLabel, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+                      Nome Completo
+                    </Text>
+                    <TextInput
+                      placeholder="Seu nome..."
+                      placeholderTextColor={theme.colors.textMuted}
+                      value={name}
+                      onChangeText={setName}
+                      style={[styles.input, { color: theme.colors.text, borderColor: theme.colors.border }]}
+                    />
+                  </View>
+                )}
+
                 <View style={styles.inputGroup}>
                   <Text style={[styles.inputLabel, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
-                    Nome Completo
+                    Email
                   </Text>
                   <TextInput
-                    placeholder="Seu nome..."
+                    placeholder="exemplo@email.com"
                     placeholderTextColor={theme.colors.textMuted}
-                    value={name}
-                    onChangeText={setName}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
                     style={[styles.input, { color: theme.colors.text, borderColor: theme.colors.border }]}
                   />
                 </View>
-              )}
 
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
-                  Email
-                </Text>
-                <TextInput
-                  placeholder="exemplo@email.com"
-                  placeholderTextColor={theme.colors.textMuted}
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  style={[styles.input, { color: theme.colors.text, borderColor: theme.colors.border }]}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
-                  Senha
-                </Text>
-                <TextInput
-                  placeholder="Mínimo 6 caracteres"
-                  placeholderTextColor={theme.colors.textMuted}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  style={[styles.input, { color: theme.colors.text, borderColor: theme.colors.border }]}
-                />
-              </View>
-
-              {errorMessage && (
-                <Text style={[styles.errorText, { color: '#D85A38', fontFamily: 'Nunito_600SemiBold' }]}>
-                  {errorMessage}
-                </Text>
-              )}
-
-              <TouchableOpacity
-                style={[styles.submitBtn, { backgroundColor: theme.colors.primary }]}
-                onPress={handleAuth}
-                disabled={isLoading}
-                accessibilityRole="button"
-                accessibilityLabel={authMode === 'login' ? 'Entrar' : 'Criar conta'}
-              >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={[styles.submitText, { color: '#FFFFFF', fontFamily: 'Nunito_700Bold' }]}>
-                    {authMode === 'login' ? 'Entrar com JWT' : 'Cadastrar Usuário'}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+                    Senha
                   </Text>
+                  <TextInput
+                    placeholder="Mínimo 6 caracteres"
+                    placeholderTextColor={theme.colors.textMuted}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    style={[styles.input, { color: theme.colors.text, borderColor: theme.colors.border }]}
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.submitBtn, { backgroundColor: theme.colors.primary }]}
+                  onPress={handleAuth}
+                  disabled={isLoading}
+                  accessibilityRole="button"
+                  accessibilityLabel={authMode === 'login' ? 'Entrar' : 'Criar conta'}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={[styles.submitText, { color: '#FFFFFF', fontFamily: 'Nunito_700Bold' }]}>
+                      {authMode === 'login' ? 'Entrar com JWT' : 'Cadastrar Usuário'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )
+          ) : (
+            /* Local Backup & Offline Queue Section */
+            <View style={styles.localContainer}>
+              {/* Backup Local Box */}
+              <View
+                style={[
+                  styles.backupCard,
+                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                ]}
+              >
+                <View style={styles.cardHeaderRow}>
+                  <Ionicons name="save-outline" size={22} color={theme.colors.primary} />
+                  <Text style={[styles.cardTitle, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+                    Backup Local em JSON
+                  </Text>
+                </View>
+
+                <Text style={[styles.cardDesc, { color: theme.colors.textSecondary, fontFamily: 'Nunito_400Regular' }]}>
+                  Exporte ou restaure todos os seus dados locais do SQLite (favoritos, destaques coloridos, anotações de estudo, progresso de leitura e recordes do quiz) em formato JSON validado com Zod.
+                </Text>
+
+                <View style={styles.backupActions}>
+                  <TouchableOpacity
+                    style={[styles.backupBtn, { backgroundColor: theme.colors.primary }]}
+                    onPress={handleExportBackup}
+                    disabled={isExporting}
+                    accessibilityRole="button"
+                    accessibilityLabel="Exportar dados locais para JSON"
+                  >
+                    {isExporting ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Ionicons name="download-outline" size={18} color="#FFFFFF" />
+                        <Text style={[styles.backupBtnText, { color: '#FFFFFF', fontFamily: 'Nunito_700Bold' }]}>
+                          Exportar Backup (Copiar JSON)
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.backupBtnSecondary, { borderColor: theme.colors.border }]}
+                    onPress={() => setShowImportBox(!showImportBox)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Restaurar dados locais a partir de JSON"
+                  >
+                    <Ionicons name="refresh-circle-outline" size={20} color={theme.colors.text} />
+                    <Text style={[styles.backupBtnSecondaryText, { color: theme.colors.text, fontFamily: 'Nunito_600SemiBold' }]}>
+                      {showImportBox ? 'Cancelar Restauração' : 'Restaurar de JSON...'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {showImportBox && (
+                  <View style={styles.importBox}>
+                    <Text style={[styles.importLabel, { color: theme.colors.text, fontFamily: 'Nunito_600SemiBold' }]}>
+                      Cole o JSON de backup abaixo:
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.importInput,
+                        {
+                          color: theme.colors.text,
+                          borderColor: theme.colors.border,
+                          backgroundColor: theme.colors.surfaceMuted,
+                        },
+                      ]}
+                      placeholder='{"version": 1, "favorites": [...]}'
+                      placeholderTextColor={theme.colors.textMuted}
+                      multiline
+                      numberOfLines={4}
+                      value={backupJsonInput}
+                      onChangeText={setBackupJsonInput}
+                    />
+
+                    <TouchableOpacity
+                      style={[styles.confirmImportBtn, { backgroundColor: '#2E7D32' }]}
+                      onPress={handleImportBackup}
+                      disabled={isImporting}
+                      accessibilityRole="button"
+                      accessibilityLabel="Confirmar importação de backup"
+                    >
+                      {isImporting ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <>
+                          <Ionicons name="checkmark-done" size={18} color="#FFFFFF" />
+                          <Text style={[styles.confirmImportText, { color: '#FFFFFF', fontFamily: 'Nunito_700Bold' }]}>
+                            Validar e Restaurar Dados
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 )}
-              </TouchableOpacity>
+              </View>
+
+              {/* Offline Request Queue Card */}
+              <View
+                style={[
+                  styles.backupCard,
+                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                ]}
+              >
+                <View style={styles.cardHeaderRow}>
+                  <Ionicons name="wifi-outline" size={22} color={theme.colors.primary} />
+                  <Text style={[styles.cardTitle, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
+                    Fila Offline de Requisições
+                  </Text>
+                </View>
+
+                <Text style={[styles.cardDesc, { color: theme.colors.textSecondary, fontFamily: 'Nunito_400Regular' }]}>
+                  Quando o dispositivo estiver sem internet, alterações são enfileiradas localmente com política de retentativa automática.
+                </Text>
+
+                <View style={styles.queueStatusRow}>
+                  <Text style={[styles.queueCountLabel, { color: theme.colors.text, fontFamily: 'Nunito_600SemiBold' }]}>
+                    Itens pendentes na fila:
+                  </Text>
+                  <View style={[styles.queueBadge, { backgroundColor: theme.colors.primaryLight }]}>
+                    <Text style={[styles.queueBadgeText, { color: theme.colors.primary, fontFamily: 'Nunito_700Bold' }]}>
+                      {queueCount}
+                    </Text>
+                  </View>
+                </View>
+
+                {queueCount > 0 && (
+                  <View style={styles.queueActionsRow}>
+                    <TouchableOpacity
+                      style={[styles.drainBtn, { backgroundColor: theme.colors.primary }]}
+                      onPress={handleDrainQueue}
+                      disabled={isSyncing}
+                      accessibilityRole="button"
+                    >
+                      <Text style={[styles.drainBtnText, { color: '#FFFFFF', fontFamily: 'Nunito_700Bold' }]}>
+                        Processar Fila Agora
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.clearQueueBtn, { borderColor: theme.colors.border }]}
+                      onPress={handleClearQueue}
+                      accessibilityRole="button"
+                    >
+                      <Text style={[styles.clearQueueText, { color: '#D85A38', fontFamily: 'Nunito_600SemiBold' }]}>
+                        Descartar
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             </View>
           )}
         </ScrollView>
@@ -361,9 +681,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  sectionTabs: {
+    flexDirection: 'row',
+    padding: 4,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 12,
+  },
+  sectionTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 42,
+    borderRadius: 9,
+    gap: 8,
+  },
+  sectionTabActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionTabText: {
+    fontSize: 13,
+  },
   content: {
-    padding: 20,
+    padding: 16,
+    paddingBottom: 40,
     gap: 16,
+  },
+  messageBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   loggedContainer: {
     gap: 16,
@@ -485,13 +840,129 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   successText: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
   },
   errorText: {
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
+  },
+  localContainer: {
+    gap: 16,
+  },
+  backupCard: {
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 12,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cardTitle: {
+    fontSize: 16,
+  },
+  cardDesc: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  backupActions: {
+    gap: 8,
+  },
+  backupBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    borderRadius: 10,
+    gap: 8,
+  },
+  backupBtnText: {
     fontSize: 14,
-    textAlign: 'center',
-    marginTop: 6,
+  },
+  backupBtnSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 8,
+  },
+  backupBtnSecondaryText: {
+    fontSize: 14,
+  },
+  importBox: {
+    marginTop: 8,
+    gap: 8,
+  },
+  importLabel: {
+    fontSize: 13,
+  },
+  importInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    height: 90,
+    fontSize: 12,
+    textAlignVertical: 'top',
+    fontFamily: 'monospace',
+  },
+  confirmImportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 42,
+    borderRadius: 8,
+    gap: 6,
+  },
+  confirmImportText: {
+    fontSize: 14,
+  },
+  queueStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  queueCountLabel: {
+    fontSize: 14,
+  },
+  queueBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  queueBadgeText: {
+    fontSize: 13,
+  },
+  queueActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  drainBtn: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  drainBtnText: {
+    fontSize: 13,
+  },
+  clearQueueBtn: {
+    minHeight: 40,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearQueueText: {
+    fontSize: 13,
   },
 });

@@ -25,3 +25,4 @@ Implementamos a estratégia **Last-Write-Wins (LWW) com Timestamps e Fila Offlin
 
 ### Negativas / Mitigações
 - Dependência de relógios sincronizados (NTP). Mitigado pelo servidor sempre atribuir e validar timestamps no recebimento.
+
