@@ -20,6 +20,8 @@ import { BookSelectorModal } from './BookSelectorModal';
 import { SearchModal } from './SearchModal';
 import { TranslationPickerModal } from './TranslationPickerModal';
 import { FavoritesModal } from './FavoritesModal';
+import { CloudSyncModal } from './CloudSyncModal';
+import { AiAssistantModal } from './AiAssistantModal';
 import { TranslationBanner } from './TranslationBanner';
 import { LoadingState, EmptyState } from '@/src/shared/components/FeedbackStates';
 
@@ -40,6 +42,8 @@ export function BibleReader() {
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [translationModalVisible, setTranslationModalVisible] = useState(false);
   const [favoritesModalVisible, setFavoritesModalVisible] = useState(false);
+  const [cloudSyncModalVisible, setCloudSyncModalVisible] = useState(false);
+  const [aiModalVisible, setAiModalVisible] = useState(false);
   const currentTranslation = useReaderStore((s) => s.currentTranslation);
 
   const { data: verses, isLoading } = useChapterVerses();
@@ -119,6 +123,24 @@ export function BibleReader() {
 
         {/* Action icons */}
         <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setAiModalVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Assistente Bíblico com Inteligência Artificial"
+          >
+            <Ionicons name="sparkles-outline" size={20} color={theme.colors.primary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setCloudSyncModalVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Sincronização em Nuvem Fastify"
+          >
+            <Ionicons name="cloud-outline" size={21} color={theme.colors.text} />
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => setFavoritesModalVisible(true)}
@@ -256,6 +278,16 @@ export function BibleReader() {
       <FavoritesModal
         visible={favoritesModalVisible}
         onClose={() => setFavoritesModalVisible(false)}
+      />
+
+      <CloudSyncModal
+        visible={cloudSyncModalVisible}
+        onClose={() => setCloudSyncModalVisible(false)}
+      />
+
+      <AiAssistantModal
+        visible={aiModalVisible}
+        onClose={() => setAiModalVisible(false)}
       />
     </SafeAreaView>
   );

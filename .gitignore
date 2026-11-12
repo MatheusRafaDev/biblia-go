@@ -2,6 +2,11 @@
 
 # dependencies
 node_modules/
+server/node_modules/
+server/dist/
+server/data/
+*.db
+*.db-journal
 
 # Expo
 .expo/

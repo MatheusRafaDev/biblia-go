@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: biblia-go-backend
+    restart: unless-stopped
+    ports:
+      - "3333:3333"
+    environment:
+      - NODE_ENV=production
+      - PORT=3333
+      - HOST=0.0.0.0
+      - JWT_SECRET=biblia-go-production-jwt-secret-key-2026
+      - DATABASE_PATH=/app/data/biblia_go_server.db
+    volumes:
+      - server_data:/app/data
+
+volumes:
+  server_data:

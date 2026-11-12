@@ -30,7 +30,7 @@ export type SemanticSearchResult = z.infer<typeof SemanticSearchResultSchema>;
 
 export const SyncPayloadSchema = z.object({
   userId: z.string(),
-  lastSyncedAt: z.string(),
+  lastSyncedAt: z.string().optional(),
   favorites: z.array(
     z.object({
       translationId: z.string(),

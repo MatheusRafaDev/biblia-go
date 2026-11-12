@@ -46,7 +46,11 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "server:dev": "npm run dev --prefix server",
+    "server:build": "npm run build --prefix server",
+    "server:start": "npm run start --prefix server",
+    "server:test": "npm run test --prefix server"
   },
   "private": true
 }
