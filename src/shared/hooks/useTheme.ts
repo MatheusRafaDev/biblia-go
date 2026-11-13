@@ -1,4 +1,3 @@
-import { useColorScheme } from 'react-native';
 import { create } from 'zustand';
 import { themeLight, themeDark, AppTheme } from '../constants/theme';
 
@@ -10,15 +9,13 @@ interface ThemeStore {
 }
 
 export const useThemeStore = create<ThemeStore>((set) => ({
-  preference: 'system',
+  preference: 'light',
   setPreference: (preference) => set({ preference }),
 }));
 
 export function useAppTheme(): AppTheme {
-  const systemScheme = useColorScheme();
   const preference = useThemeStore((state) => state.preference);
 
   if (preference === 'dark') return themeDark;
-  if (preference === 'light') return themeLight;
-  return systemScheme === 'dark' ? themeDark : themeLight;
+  return themeLight;
 }

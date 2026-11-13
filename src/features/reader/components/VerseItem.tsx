@@ -16,10 +16,10 @@ interface VerseItemProps {
 }
 
 const HIGHLIGHT_OPTIONS = [
-  { label: 'Amarelo', color: '#FFF59D' },
-  { label: 'Verde', color: '#C8E6C9' },
-  { label: 'Azul', color: '#BBDEFB' },
-  { label: 'Coral', color: '#FFCCBC' },
+  { label: 'Amarelo Ouro', color: '#FEF08A' },
+  { label: 'Verde Oliva', color: '#BBF7D0' },
+  { label: 'Azul Celeste', color: '#BAE6FD' },
+  { label: 'Rosa Coral', color: '#FECDD3' },
 ];
 
 export function VerseItem({
@@ -107,9 +107,10 @@ export function VerseItem({
           activeColor && !theme.isDark && { backgroundColor: activeColor + '80' },
           activeColor && theme.isDark && { backgroundColor: activeColor + '30' },
           isTarget && {
-            borderLeftColor: theme.colors.primary,
-            borderLeftWidth: 4,
+            borderLeftColor: theme.colors.gold,
+            borderLeftWidth: 3.5,
             paddingLeft: 8,
+            backgroundColor: theme.colors.cardPastelYellow,
           },
         ]}
       >
@@ -117,9 +118,9 @@ export function VerseItem({
           style={[
             styles.verseNumber,
             {
-              color: theme.colors.primary,
-              fontSize: Math.max(13, fontSize - 4),
-              fontFamily: 'Nunito_700Bold',
+              color: theme.colors.verseNumber,
+              fontSize: Math.max(12, fontSize - 4),
+              fontFamily: 'Nunito_800ExtraBold',
             },
           ]}
         >
@@ -127,7 +128,7 @@ export function VerseItem({
         </Text>
 
         {note && (
-          <Ionicons name="document-text" size={13} color={theme.colors.primary} style={styles.noteIndicator} />
+          <Ionicons name="document-text" size={13} color={theme.colors.gold} style={styles.noteIndicator} />
         )}
 
         <Text
@@ -136,7 +137,7 @@ export function VerseItem({
             {
               color: theme.colors.text,
               fontSize,
-              lineHeight: Math.round(fontSize * 1.6),
+              lineHeight: Math.round(fontSize * 1.7),
               fontFamily: 'Nunito_400Regular',
             },
           ]}
@@ -314,13 +315,12 @@ export function VerseItem({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 4,
+    marginVertical: 2,
   },
   verseRow: {
-    minHeight: 44,
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: 6,
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'baseline',
