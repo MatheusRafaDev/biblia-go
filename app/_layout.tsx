@@ -43,7 +43,17 @@ function AppContent() {
   }, [isReady, bibleRepository]);
 
   if (error) {
-    return <ErrorState title="Erro ao inicializar o banco de dados" message={error.message} />;
+    return (
+      <ErrorState
+        title="Erro ao inicializar o banco de dados"
+        message={error.message}
+        onRetry={() => {
+          if (typeof window !== 'undefined' && window.location) {
+            window.location.reload();
+          }
+        }}
+      />
+    );
   }
 
   if (!isReady) {

@@ -43,7 +43,14 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
 
     async function init() {
       try {
-        const sqliteDb = await SQLite.openDatabaseAsync(DB_NAME);
+        let sqliteDb: ISqliteDb;
+        try {
+          sqliteDb = await SQLite.openDatabaseAsync(DB_NAME);
+        } catch (openErr) {
+          console.warn('[DatabaseProvider] Persistent SQLite open failed, falling back to in-memory:', openErr);
+          sqliteDb = await SQLite.openDatabaseAsync(':memory:');
+        }
+
         await runMigrations(sqliteDb);
 
         if (isMounted) {
@@ -62,6 +69,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         if (isMounted) {
+          console.error('[DatabaseProvider] Initialization error:', err);
           setError(err instanceof Error ? err : new Error(String(err)));
         }
       }

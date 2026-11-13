@@ -64,29 +64,39 @@ export const migrations: Migration[] = [
         ON verses(translation_id, book_id, chapter);
       `);
 
-      // 4. FTS5 Virtual Table for full-text search
-      await db.execAsync(`
-        CREATE VIRTUAL TABLE IF NOT EXISTS verses_fts USING fts5(
-          text,
-          content='verses',
-          content_rowid='id'
+      // 4. FTS5 Virtual Table for full-text search (with fallback for environments without FTS5 like web wa-sqlite)
+      try {
+        await db.execAsync(`
+          CREATE VIRTUAL TABLE IF NOT EXISTS verses_fts USING fts5(
+            text,
+            content='verses',
+            content_rowid='id'
+          );
+
+          CREATE TRIGGER IF NOT EXISTS verses_ai AFTER INSERT ON verses BEGIN
+            INSERT INTO verses_fts(rowid, text) VALUES (new.id, new.text);
+          END;
+
+          CREATE TRIGGER IF NOT EXISTS verses_ad AFTER DELETE ON verses BEGIN
+            INSERT INTO verses_fts(verses_fts, rowid, text) VALUES('delete', old.id, old.text);
+          END;
+
+          CREATE TRIGGER IF NOT EXISTS verses_au AFTER UPDATE ON verses BEGIN
+            INSERT INTO verses_fts(verses_fts, rowid, text) VALUES('delete', old.id, old.text);
+            INSERT INTO verses_fts(rowid, text) VALUES (new.id, new.text);
+          END;
+        `);
+      } catch (ftsError) {
+        console.warn(
+          '[migrations] FTS5 not supported in this SQLite environment (e.g. web wa-sqlite without FTS extension). Falling back to index/LIKE search.',
+          ftsError
         );
-      `);
+      }
 
-      // Triggers to keep FTS5 synchronized with verses table
+      // Supplementary search index for non-FTS environments
       await db.execAsync(`
-        CREATE TRIGGER IF NOT EXISTS verses_ai AFTER INSERT ON verses BEGIN
-          INSERT INTO verses_fts(rowid, text) VALUES (new.id, new.text);
-        END;
-
-        CREATE TRIGGER IF NOT EXISTS verses_ad AFTER DELETE ON verses BEGIN
-          INSERT INTO verses_fts(verses_fts, rowid, text) VALUES('delete', old.id, old.text);
-        END;
-
-        CREATE TRIGGER IF NOT EXISTS verses_au AFTER UPDATE ON verses BEGIN
-          INSERT INTO verses_fts(verses_fts, rowid, text) VALUES('delete', old.id, old.text);
-          INSERT INTO verses_fts(rowid, text) VALUES (new.id, new.text);
-        END;
+        CREATE INDEX IF NOT EXISTS idx_verses_text_fallback 
+        ON verses(translation_id, text);
       `);
 
       // 5. Favorites and highlights table
