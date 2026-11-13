@@ -16,10 +16,10 @@ interface VerseItemProps {
 }
 
 const HIGHLIGHT_OPTIONS = [
-  { label: 'Amarelo Ouro', color: '#FEF08A' },
-  { label: 'Verde Oliva', color: '#BBF7D0' },
-  { label: 'Azul Celeste', color: '#BAE6FD' },
-  { label: 'Rosa Coral', color: '#FECDD3' },
+  { label: 'Ouro', color: '#FEF08A' },
+  { label: 'Oliva', color: '#BBF7D0' },
+  { label: 'Celeste', color: '#BAE6FD' },
+  { label: 'Coral', color: '#FECDD3' },
 ];
 
 export function VerseItem({
@@ -42,7 +42,7 @@ export function VerseItem({
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [noteDraft, setNoteDraft] = useState(note || '');
 
-  const activeColor = highlightColor || (isFavorited ? '#FFF59D' : undefined);
+  const activeColor = highlightColor || (isFavorited ? '#FEF08A' : undefined);
 
   const handleColorSelect = (color: string) => {
     toggleFavoriteMutation.mutate({ verse: verseNumber, color });
@@ -58,7 +58,7 @@ export function VerseItem({
     if (!isFavorited) {
       toggleFavoriteMutation.mutate({
         verse: verseNumber,
-        color: activeColor || '#FFF59D',
+        color: activeColor || '#FEF08A',
       });
     }
     updateNoteMutation.mutate({
@@ -96,30 +96,33 @@ export function VerseItem({
 
   return (
     <View style={styles.container}>
+      {/* Verse Text Row */}
       <TouchableOpacity
-        activeOpacity={0.7}
+        activeOpacity={0.65}
         onPress={handleToggle}
         accessibilityRole="button"
         accessibilityLabel={`Versículo ${verseNumber}: ${text}${note ? `. Anotação: ${note}` : ''}`}
-        accessibilityHint="Toque para destacar, anotar, copiar ou comparar traduções"
+        accessibilityHint="Toque para destacar, anotar, copiar ou comparar"
         style={[
           styles.verseRow,
-          activeColor && !theme.isDark && { backgroundColor: activeColor + '80' },
+          activeColor && !theme.isDark && { backgroundColor: activeColor + '85' },
           activeColor && theme.isDark && { backgroundColor: activeColor + '30' },
-          isTarget && {
-            borderLeftColor: theme.colors.gold,
-            borderLeftWidth: 3.5,
-            paddingLeft: 8,
-            backgroundColor: theme.colors.cardPastelYellow,
-          },
+          isTarget && [
+            styles.targetVerseRow,
+            {
+              borderLeftColor: theme.colors.gold,
+              backgroundColor: theme.isDark ? '#2E2818' : '#FEF9EE',
+            },
+          ],
         ]}
       >
+        {/* Subtle, Dignified Verse Number */}
         <Text
           style={[
             styles.verseNumber,
             {
               color: theme.colors.verseNumber,
-              fontSize: Math.max(12, fontSize - 4),
+              fontSize: Math.max(11, fontSize - 4),
               fontFamily: 'Nunito_800ExtraBold',
             },
           ]}
@@ -127,17 +130,19 @@ export function VerseItem({
           {verseNumber}{' '}
         </Text>
 
+        {/* Note indicator dot if exists */}
         {note && (
-          <Ionicons name="document-text" size={13} color={theme.colors.gold} style={styles.noteIndicator} />
+          <Ionicons name="bookmark" size={12} color={theme.colors.gold} style={styles.noteIndicator} />
         )}
 
+        {/* Scripture Text */}
         <Text
           style={[
             styles.verseText,
             {
               color: theme.colors.text,
               fontSize,
-              lineHeight: Math.round(fontSize * 1.7),
+              lineHeight: Math.round(fontSize * 1.72),
               fontFamily: 'Nunito_400Regular',
             },
           ]}
@@ -146,12 +151,20 @@ export function VerseItem({
         </Text>
       </TouchableOpacity>
 
-      {/* Render Note card if exists */}
+      {/* Note Preview if exists */}
       {note && (
-        <View style={[styles.savedNoteCard, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
+        <View
+          style={[
+            styles.savedNoteCard,
+            {
+              backgroundColor: theme.colors.surfaceMuted,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
           <View style={styles.noteHeader}>
-            <Ionicons name="create-outline" size={13} color={theme.colors.primary} />
-            <Text style={[styles.noteAuthor, { color: theme.colors.primary, fontFamily: 'Nunito_700Bold' }]}>
+            <Ionicons name="document-text-outline" size={13} color={theme.colors.gold} />
+            <Text style={[styles.noteAuthor, { color: theme.colors.gold, fontFamily: 'Nunito_700Bold' }]}>
               Anotação de Estudo
             </Text>
           </View>
@@ -161,7 +174,7 @@ export function VerseItem({
         </View>
       )}
 
-      {/* Actions Bar */}
+      {/* Refined, Quiet Quick Action Strip (only shown on tap) */}
       {showActions && (
         <View
           style={[
@@ -169,18 +182,12 @@ export function VerseItem({
             {
               backgroundColor: theme.colors.surface,
               borderColor: theme.colors.border,
+              shadowColor: theme.isDark ? '#000000' : '#1C1917',
             },
           ]}
         >
           <View style={styles.actionsTopRow}>
-            <Text
-              style={[
-                styles.actionsLabel,
-                { color: theme.colors.textMuted, fontFamily: 'Nunito_600SemiBold' },
-              ]}
-            >
-              Destacar v.{verseNumber}:
-            </Text>
+            {/* Highlighter Color Dots */}
             <View style={styles.colorsRow}>
               {HIGHLIGHT_OPTIONS.map((opt) => (
                 <TouchableOpacity
@@ -188,78 +195,64 @@ export function VerseItem({
                   style={[
                     styles.colorDot,
                     { backgroundColor: opt.color },
-                    activeColor === opt.color && styles.colorDotActive,
+                    activeColor === opt.color && [styles.colorDotActive, { borderColor: theme.colors.gold }],
                   ]}
                   onPress={() => handleColorSelect(opt.color)}
-                  accessibilityLabel={`Destacar com cor ${opt.label}`}
                   accessibilityRole="button"
+                  accessibilityLabel={`Destacar em ${opt.label}`}
                 />
               ))}
-              {isFavorited && (
+
+              {activeColor && (
                 <TouchableOpacity
                   style={styles.actionIconBtn}
-                  onPress={() => {
-                    toggleFavoriteMutation.mutate({ verse: verseNumber });
-                    setShowActions(false);
-                    setShowNoteInput(false);
-                  }}
-                  accessibilityLabel="Remover destaque"
+                  onPress={() => handleColorSelect('')}
                   accessibilityRole="button"
+                  accessibilityLabel="Remover destaque"
                 >
-                  <Ionicons name="trash-outline" size={18} color={theme.colors.textMuted} />
+                  <Ionicons name="close-circle-outline" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
-          </View>
 
-          {/* Quick Buttons: Share, Compare, Note */}
-          <View style={styles.actionsBottomRow}>
-            <TouchableOpacity
-              style={[styles.quickButton, { backgroundColor: theme.colors.surfaceMuted }]}
-              onPress={handleShare}
-              accessibilityRole="button"
-              accessibilityLabel="Compartilhar versículo"
-            >
-              <Ionicons name="share-social-outline" size={16} color={theme.colors.text} />
-              <Text style={[styles.quickBtnText, { color: theme.colors.text, fontFamily: 'Nunito_600SemiBold' }]}>
-                Compartilhar
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.quickButton, { backgroundColor: theme.colors.primaryLight }]}
-              onPress={handleCompare}
-              accessibilityRole="button"
-              accessibilityLabel="Comparar versículo em outras versões"
-            >
-              <Ionicons name="git-compare-outline" size={16} color={theme.colors.primary} />
-              <Text style={[styles.quickBtnText, { color: theme.colors.primary, fontFamily: 'Nunito_700Bold' }]}>
-                Comparar
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.quickButton,
-                { backgroundColor: showNoteInput ? theme.colors.primaryLight : theme.colors.surfaceMuted },
-              ]}
-              onPress={() => setShowNoteInput(!showNoteInput)}
-              accessibilityRole="button"
-              accessibilityLabel="Adicionar ou editar anotação"
-            >
-              <Ionicons name="create-outline" size={16} color={showNoteInput ? theme.colors.primary : theme.colors.text} />
-              <Text
-                style={[
-                  styles.quickBtnText,
-                  {
-                    color: showNoteInput ? theme.colors.primary : theme.colors.text,
-                    fontFamily: 'Nunito_700Bold',
-                  },
-                ]}
+            {/* Quick Action Icons */}
+            <View style={styles.actionsIconsGroup}>
+              <TouchableOpacity
+                style={styles.actionIconBtn}
+                onPress={() => setShowNoteInput((prev) => !prev)}
+                accessibilityRole="button"
+                accessibilityLabel="Anotar no versículo"
               >
-                {note ? 'Editar Nota' : 'Anotar'}
-              </Text>
-            </TouchableOpacity>
+                <Ionicons name="create-outline" size={18} color={theme.colors.text} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionIconBtn}
+                onPress={handleShare}
+                accessibilityRole="button"
+                accessibilityLabel="Copiar versículo"
+              >
+                <Ionicons name="copy-outline" size={18} color={theme.colors.text} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionIconBtn}
+                onPress={handleCompare}
+                accessibilityRole="button"
+                accessibilityLabel="Comparar traduções"
+              >
+                <Ionicons name="git-compare-outline" size={18} color={theme.colors.text} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionIconBtn}
+                onPress={() => setShowActions(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar ações"
+              >
+                <Ionicons name="close" size={18} color={theme.colors.textMuted} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Inline Note Editor */}
@@ -270,31 +263,28 @@ export function VerseItem({
                   styles.noteTextInput,
                   {
                     color: theme.colors.text,
-                    borderColor: theme.colors.border,
                     backgroundColor: theme.colors.surfaceMuted,
+                    borderColor: theme.colors.border,
+                    fontFamily: 'Nunito_400Regular',
                   },
                 ]}
-                placeholder="Escreva sua reflexão sobre este versículo..."
+                placeholder="Escreva sua reflexão ou nota teológica..."
                 placeholderTextColor={theme.colors.textMuted}
                 multiline
-                numberOfLines={3}
                 value={noteDraft}
                 onChangeText={setNoteDraft}
-                autoFocus
               />
               <View style={styles.noteActionsRow}>
                 <TouchableOpacity
-                  style={[styles.saveNoteBtn, { backgroundColor: theme.colors.primary }]}
+                  style={[styles.saveNoteBtn, { backgroundColor: theme.colors.gold }]}
                   onPress={handleSaveNote}
                   accessibilityRole="button"
-                  accessibilityLabel="Salvar anotação"
                 >
                   <Ionicons name="checkmark" size={16} color="#FFFFFF" />
                   <Text style={[styles.saveNoteText, { color: '#FFFFFF', fontFamily: 'Nunito_700Bold' }]}>
                     Salvar Nota
                   </Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
                   style={[styles.cancelNoteBtn, { borderColor: theme.colors.border }]}
                   onPress={() => setShowNoteInput(false)}
@@ -315,19 +305,23 @@ export function VerseItem({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 2,
+    marginVertical: 1,
   },
   verseRow: {
-    paddingVertical: 4,
+    paddingVertical: 5,
     paddingHorizontal: 8,
     borderRadius: 6,
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'baseline',
   },
+  targetVerseRow: {
+    borderLeftWidth: 3.5,
+    paddingLeft: 8,
+  },
   verseNumber: {
     marginRight: 4,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   noteIndicator: {
     marginRight: 4,
@@ -359,38 +353,21 @@ const styles = StyleSheet.create({
   },
   actionsBar: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    marginTop: 6,
-    marginHorizontal: 8,
-    gap: 10,
+    marginTop: 4,
+    marginHorizontal: 6,
+    gap: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
   actionsTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  actionsBottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  quickButton: {
-    flex: 1,
-    flexDirection: 'row',
-    minHeight: 40,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingHorizontal: 8,
-  },
-  quickBtnText: {
-    fontSize: 12,
-  },
-  actionsLabel: {
-    fontSize: 13,
   },
   colorsRow: {
     flexDirection: 'row',
@@ -398,22 +375,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   colorDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   colorDotActive: {
-    borderColor: '#3B6EF5',
     transform: [{ scale: 1.15 }],
+  },
+  actionsIconsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   actionIconBtn: {
     width: 32,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 6,
+    borderRadius: 6,
   },
   noteInputContainer: {
     marginTop: 6,
@@ -423,7 +404,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     padding: 8,
-    height: 70,
+    height: 64,
     fontSize: 13,
     textAlignVertical: 'top',
   },
@@ -436,22 +417,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 36,
+    minHeight: 34,
     borderRadius: 8,
     gap: 6,
   },
   saveNoteText: {
-    fontSize: 13,
+    fontSize: 12,
   },
   cancelNoteBtn: {
     paddingHorizontal: 12,
-    minHeight: 36,
+    minHeight: 34,
     borderWidth: 1,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelNoteText: {
-    fontSize: 13,
+    fontSize: 12,
   },
 });

@@ -8,8 +8,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAppTheme, useThemeStore } from '@/src/shared/hooks/useTheme';
+import { useAppTheme } from '@/src/shared/hooks/useTheme';
 import { useReaderStore } from '@/src/shared/stores/useReaderStore';
+import { CANONICAL_BOOKS } from '@/src/shared/constants/books';
 import {
   useChapterVerses,
   useChapterFavorites,
@@ -22,26 +23,18 @@ import { TranslationPickerModal } from './TranslationPickerModal';
 import { FavoritesModal } from './FavoritesModal';
 import { CloudSyncModal } from './CloudSyncModal';
 import { AiAssistantModal } from './AiAssistantModal';
-import { DailyVerseModal } from '@/src/features/daily/components/DailyVerseModal';
 import { ReaderOptionsModal } from './ReaderOptionsModal';
 import { AudioReaderBar } from './AudioReaderBar';
-import { TranslationBanner } from './TranslationBanner';
 import { LoadingState, EmptyState } from '@/src/shared/components/FeedbackStates';
-import { estimateReadingTimeMinutes, formatReadingTime } from '../utils/readingTime';
 import { formatChapterForShare } from '../utils/copyChapter';
 
 export function BibleReader() {
   const theme = useAppTheme();
-  const themePreference = useThemeStore((s) => s.preference);
-  const setThemePreference = useThemeStore((s) => s.setPreference);
-
-  const handleToggleTheme = () => {
-    setThemePreference(themePreference === 'dark' ? 'light' : 'dark');
-  };
 
   const currentBook = useCurrentBook();
   const currentChapter = useReaderStore((s) => s.currentChapter);
   const setChapter = useReaderStore((s) => s.setChapter);
+  const goToPassage = useReaderStore((s) => s.goToPassage);
   const targetVerse = useReaderStore((s) => s.targetVerse);
   const clearTargetVerse = useReaderStore((s) => s.clearTargetVerse);
 
@@ -51,7 +44,6 @@ export function BibleReader() {
   const [favoritesModalVisible, setFavoritesModalVisible] = useState(false);
   const [cloudSyncModalVisible, setCloudSyncModalVisible] = useState(false);
   const [aiModalVisible, setAiModalVisible] = useState(false);
-  const [dailyVerseModalVisible, setDailyVerseModalVisible] = useState(false);
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
@@ -71,7 +63,7 @@ export function BibleReader() {
     }
   }
 
-  // Clear target verse after 3.5 seconds
+  // Clear target verse highlight after 3.5s
   useEffect(() => {
     if (targetVerse) {
       const timer = setTimeout(() => {
@@ -81,20 +73,31 @@ export function BibleReader() {
     }
   }, [targetVerse, clearTargetVerse]);
 
-  // Scroll to top when chapter changes
+  // Scroll to top when book or chapter changes
   useEffect(() => {
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   }, [currentBook.id, currentChapter]);
 
+  // Seamless chapter navigation (crosses book boundaries)
   const handlePrevChapter = () => {
     if (currentChapter > 1) {
       setChapter(currentChapter - 1);
+    } else if (currentBook.id > 1) {
+      const prevBook = CANONICAL_BOOKS.find((b) => b.id === currentBook.id - 1);
+      if (prevBook) {
+        goToPassage(prevBook.id, prevBook.chaptersCount);
+      }
     }
   };
 
   const handleNextChapter = () => {
     if (currentChapter < currentBook.chaptersCount) {
       setChapter(currentChapter + 1);
+    } else if (currentBook.id < 66) {
+      const nextBook = CANONICAL_BOOKS.find((b) => b.id === currentBook.id + 1);
+      if (nextBook) {
+        goToPassage(nextBook.id, 1);
+      }
     }
   };
 
@@ -113,24 +116,35 @@ export function BibleReader() {
     setTimeout(() => setCopyFeedback(false), 2500);
   };
 
-  const readingTimeText =
-    verses && verses.length > 0
-      ? formatReadingTime(estimateReadingTimeMinutes(verses))
-      : null;
+  const isFirstChapter = currentBook.id === 1 && currentChapter === 1;
+  const isLastChapter = currentBook.id === 66 && currentChapter === currentBook.chaptersCount;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Top Header Bar */}
-      <View style={[styles.headerBar, { borderBottomColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
+      {/* Top Header Bar - Quiet, Dignified & Minimal */}
+      <View
+        style={[
+          styles.headerBar,
+          {
+            borderBottomColor: theme.colors.border,
+            backgroundColor: theme.colors.background,
+          },
+        ]}
+      >
         <View style={styles.selectorsGroup}>
           {/* Book & Chapter Selector Pill */}
           <TouchableOpacity
-            style={[styles.selectorPill, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+            style={[
+              styles.selectorPill,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+              },
+            ]}
             onPress={() => setBookModalVisible(true)}
             accessibilityRole="button"
             accessibilityLabel={`Selecionar livro e capítulo. Atual: ${currentBook.name} capítulo ${currentChapter}`}
           >
-            <Ionicons name="book" size={15} color={theme.colors.gold} />
             <Text style={[styles.selectorTitle, { color: theme.colors.text, fontFamily: 'Nunito_800ExtraBold' }]}>
               {currentBook.name} {currentChapter}
             </Text>
@@ -139,20 +153,26 @@ export function BibleReader() {
 
           {/* Translation Picker Pill */}
           <TouchableOpacity
-            style={[styles.translationPill, { backgroundColor: theme.colors.cardPastelYellow, borderColor: theme.colors.border }]}
+            style={[
+              styles.translationPill,
+              {
+                backgroundColor: theme.colors.surfaceMuted,
+                borderColor: theme.colors.border,
+              },
+            ]}
             onPress={() => setTranslationModalVisible(true)}
             accessibilityRole="button"
             accessibilityLabel={`Tradução atual: ${currentTranslation}. Toque para alterar`}
           >
-            <Text style={[styles.translationText, { color: theme.colors.gold, fontFamily: 'Nunito_800ExtraBold' }]}>
+            <Text style={[styles.translationText, { color: theme.colors.text, fontFamily: 'Nunito_700Bold' }]}>
               {currentTranslation}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Action Icons */}
+        {/* Quiet, Essential Action Icons */}
         <View style={styles.headerActions}>
-          {/* 🎧 Audio Player Quick Toggle */}
+          {/* 🎧 Audio Narration */}
           <TouchableOpacity
             style={[
               styles.iconButton,
@@ -160,7 +180,7 @@ export function BibleReader() {
             ]}
             onPress={() => setAudioPlaying((prev) => !prev)}
             accessibilityRole="button"
-            accessibilityLabel={audioPlaying ? 'Ocultar áudio' : 'Ouvir capítulo com narração em áudio'}
+            accessibilityLabel={audioPlaying ? 'Ocultar áudio' : 'Ouvir narração em áudio'}
           >
             <Ionicons
               name={audioPlaying ? 'volume-high' : 'volume-medium-outline'}
@@ -169,28 +189,14 @@ export function BibleReader() {
             />
           </TouchableOpacity>
 
-          {/* ☀️/🌙 Instant Light/Dark Theme Switch */}
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={handleToggleTheme}
-            accessibilityRole="button"
-            accessibilityLabel={theme.isDark ? 'Ativar modo Papel Bíblico Claro' : 'Ativar modo Noturno'}
-          >
-            <Ionicons
-              name={theme.isDark ? 'sunny' : 'moon'}
-              size={19}
-              color={theme.isDark ? '#F59E0B' : theme.colors.text}
-            />
-          </TouchableOpacity>
-
           {/* 🔍 Search */}
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => setSearchModalVisible(true)}
             accessibilityRole="button"
-            accessibilityLabel="Buscar versículos"
+            accessibilityLabel="Buscar na Bíblia"
           >
-            <Ionicons name="search" size={20} color={theme.colors.text} />
+            <Ionicons name="search-outline" size={20} color={theme.colors.text} />
           </TouchableOpacity>
 
           {/* 🔖 Bookmarks & Notes */}
@@ -198,73 +204,62 @@ export function BibleReader() {
             style={styles.iconButton}
             onPress={() => setFavoritesModalVisible(true)}
             accessibilityRole="button"
-            accessibilityLabel="Ver versículos destacados e favoritos"
+            accessibilityLabel="Ver versículos destacados e notas de estudo"
           >
             <Ionicons name="bookmark-outline" size={20} color={theme.colors.text} />
           </TouchableOpacity>
 
-          {/* ⚙️ More Reader Options */}
+          {/* Aa Reading Options & Typography */}
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => setOptionsModalVisible(true)}
             accessibilityRole="button"
-            accessibilityLabel="Mais opções de leitura e configurações"
+            accessibilityLabel="Ajustes de leitura, tamanho de texto e opções"
           >
-            <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.text} />
+            <Ionicons name="text-outline" size={20} color={theme.colors.text} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Copy Feedback Toast */}
       {copyFeedback && (
-        <View style={[styles.toastBanner, { backgroundColor: theme.colors.cardPastelGreen, borderColor: '#A7F3D0' }]}>
-          <Ionicons name="checkmark-circle" size={16} color="#2E7D32" />
-          <Text style={[styles.toastText, { color: '#1B5E20', fontFamily: 'Nunito_700Bold' }]}>
+        <View
+          style={[
+            styles.toastBanner,
+            {
+              backgroundColor: theme.colors.cardPastelGreen,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          <Ionicons name="checkmark-circle" size={16} color="#15803D" />
+          <Text style={[styles.toastText, { color: '#14532D', fontFamily: 'Nunito_700Bold' }]}>
             Capítulo {currentBook.name} {currentChapter} copiado com referências!
           </Text>
         </View>
       )}
 
-      {/* Offline Download Banner */}
-      <TranslationBanner />
-
-      {/* Chapter Verses Content */}
+      {/* Scripture Verses Content */}
       {isLoading ? (
-        <LoadingState message={`Carregando ${currentBook.name} ${currentChapter}...`} />
+        <LoadingState message={`Abrindo ${currentBook.name} ${currentChapter}...`} />
       ) : verses && verses.length > 0 ? (
         <ScrollView
           ref={scrollViewRef}
           contentContainerStyle={styles.versesContainer}
           showsVerticalScrollIndicator={false}
         >
-          {/* Authentic Biblical Chapter Header */}
-          <View style={styles.chapterHeaderBadge}>
-            <Text style={[styles.testamentLabel, { color: theme.colors.gold, fontFamily: 'Nunito_700Bold' }]}>
-              {currentBook.testament === 'OT' ? 'ANTIGO TESTAMENTO' : 'NOVO TESTAMENTO'}
-            </Text>
-            <Text style={[styles.chapterTitle, { color: theme.colors.text, fontFamily: 'Nunito_800ExtraBold' }]}>
-              {currentBook.name.toUpperCase()}
+          {/* Reverent, Sacred Chapter Header */}
+          <View style={styles.chapterHeader}>
+            <Text style={[styles.bookNameTitle, { color: theme.colors.text, fontFamily: 'Nunito_800ExtraBold' }]}>
+              {currentBook.name}
             </Text>
             <Text style={[styles.chapterSubtitle, { color: theme.colors.gold, fontFamily: 'Nunito_700Bold' }]}>
               Capítulo {currentChapter}
             </Text>
-
-            {/* Sacred Ornamental Divider */}
-            <View style={styles.sacredOrnamentRow}>
-              <View style={[styles.ornamentLine, { backgroundColor: theme.colors.border }]} />
-              <Text style={[styles.ornamentSymbol, { color: theme.colors.gold }]}>✦</Text>
-              <View style={[styles.ornamentLine, { backgroundColor: theme.colors.border }]} />
-            </View>
-
-            {/* Reading Details Pill */}
-            <View style={[styles.readingTimePill, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
-              <Ionicons name="book-outline" size={13} color={theme.colors.textMuted} />
-              <Text style={[styles.readingTimeText, { color: theme.colors.textMuted, fontFamily: 'Nunito_600SemiBold' }]}>
-                {verses.length} versículos {readingTimeText ? `• ${readingTimeText}` : ''}
-              </Text>
-            </View>
+            <View style={[styles.sacredDivider, { backgroundColor: theme.colors.border }]} />
           </View>
 
+          {/* Verses Flow */}
           {verses.map((v) => {
             const favInfo = favoritesMap.get(v.verse);
             return (
@@ -279,48 +274,90 @@ export function BibleReader() {
               />
             );
           })}
-
-          {/* Chapter Navigation Footer */}
-          <View style={styles.footerNav}>
-            <TouchableOpacity
-              style={[
-                styles.navButton,
-                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-                currentChapter <= 1 && styles.navButtonDisabled,
-              ]}
-              onPress={handlePrevChapter}
-              disabled={currentChapter <= 1}
-              accessibilityRole="button"
-              accessibilityLabel="Capítulo anterior"
-            >
-              <Ionicons name="chevron-back" size={20} color={theme.colors.text} />
-              <Text style={[styles.navButtonText, { color: theme.colors.text, fontFamily: 'Nunito_600SemiBold' }]}>
-                Anterior
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.navButton,
-                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-                currentChapter >= currentBook.chaptersCount && styles.navButtonDisabled,
-              ]}
-              onPress={handleNextChapter}
-              disabled={currentChapter >= currentBook.chaptersCount}
-              accessibilityRole="button"
-              accessibilityLabel="Próximo capítulo"
-            >
-              <Text style={[styles.navButtonText, { color: theme.colors.text, fontFamily: 'Nunito_600SemiBold' }]}>
-                Próximo
-              </Text>
-              <Ionicons name="chevron-forward" size={20} color={theme.colors.text} />
-            </TouchableOpacity>
-          </View>
         </ScrollView>
       ) : (
         <EmptyState
           title={`Capítulo ${currentChapter} indisponível`}
-          message="Toque no botão de download acima para baixar todos os livros para leitura offline."
+          message="Toque na tradução acima para selecionar ou carregar o texto bíblico."
+        />
+      )}
+
+      {/* Floating Bottom Chapter Navigator Bar */}
+      <View
+        style={[
+          styles.bottomNavBar,
+          {
+            backgroundColor: theme.colors.surface,
+            borderTopColor: theme.colors.border,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={[styles.bottomNavBtn, isFirstChapter && styles.disabledNavBtn]}
+          onPress={handlePrevChapter}
+          disabled={isFirstChapter}
+          accessibilityRole="button"
+          accessibilityLabel="Capítulo anterior"
+        >
+          <Ionicons name="chevron-back" size={18} color={isFirstChapter ? theme.colors.textMuted : theme.colors.gold} />
+          <Text
+            style={[
+              styles.bottomNavBtnText,
+              {
+                color: isFirstChapter ? theme.colors.textMuted : theme.colors.text,
+                fontFamily: 'Nunito_700Bold',
+              },
+            ]}
+          >
+            Anterior
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.bottomNavCenterBtn}
+          onPress={() => setBookModalVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Selecionar outro livro e capítulo"
+        >
+          <Text style={[styles.bottomNavCenterText, { color: theme.colors.textSecondary, fontFamily: 'Nunito_600SemiBold' }]}>
+            {currentBook.name} {currentChapter} de {currentBook.chaptersCount}
+          </Text>
+          <Ionicons name="list-outline" size={14} color={theme.colors.gold} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.bottomNavBtn, isLastChapter && styles.disabledNavBtn]}
+          onPress={handleNextChapter}
+          disabled={isLastChapter}
+          accessibilityRole="button"
+          accessibilityLabel="Próximo capítulo"
+        >
+          <Text
+            style={[
+              styles.bottomNavBtnText,
+              {
+                color: isLastChapter ? theme.colors.textMuted : theme.colors.text,
+                fontFamily: 'Nunito_700Bold',
+              },
+            ]}
+          >
+            Próximo
+          </Text>
+          <Ionicons name="chevron-forward" size={18} color={isLastChapter ? theme.colors.textMuted : theme.colors.gold} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Floating Audio Reader Bar */}
+      {audioPlaying && verses && (
+        <AudioReaderBar
+          bookName={currentBook.name}
+          chapter={currentChapter}
+          verses={verses}
+          onClose={() => {
+            setAudioPlaying(false);
+            setActiveAudioVerse(null);
+          }}
+          onActiveVerseChange={setActiveAudioVerse}
         />
       )}
 
@@ -355,11 +392,6 @@ export function BibleReader() {
         onClose={() => setAiModalVisible(false)}
       />
 
-      <DailyVerseModal
-        visible={dailyVerseModalVisible}
-        onClose={() => setDailyVerseModalVisible(false)}
-      />
-
       <ReaderOptionsModal
         visible={optionsModalVisible}
         onClose={() => setOptionsModalVisible(false)}
@@ -368,20 +400,6 @@ export function BibleReader() {
         onCopyChapter={handleCopyChapter}
         onStartAudio={() => setAudioPlaying(true)}
       />
-
-      {/* Floating Audio Chapter Player */}
-      {audioPlaying && verses && verses.length > 0 && (
-        <AudioReaderBar
-          verses={verses}
-          bookName={currentBook.name}
-          chapter={currentChapter}
-          onActiveVerseChange={(vNum) => setActiveAudioVerse(vNum)}
-          onClose={() => {
-            setAudioPlaying(false);
-            setActiveAudioVerse(null);
-          }}
-        />
-      )}
     </SafeAreaView>
   );
 }
@@ -409,18 +427,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
-    minHeight: 40,
-    borderRadius: 20,
+    minHeight: 38,
+    borderRadius: 19,
     borderWidth: 1,
-    flexShrink: 1,
   },
   selectorTitle: {
     fontSize: 15,
   },
   translationPill: {
     paddingHorizontal: 10,
-    minHeight: 40,
-    borderRadius: 20,
+    minHeight: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -431,14 +448,14 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
   },
   iconButton: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
+    borderRadius: 19,
   },
   toastBanner: {
     flexDirection: 'row',
@@ -452,75 +469,62 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   versesContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 90,
   },
-  chapterHeaderBadge: {
+  chapterHeader: {
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 18,
     marginBottom: 20,
-    gap: 4,
+    gap: 2,
   },
-  testamentLabel: {
-    fontSize: 11,
-    letterSpacing: 2.5,
-    textTransform: 'uppercase',
-  },
-  chapterTitle: {
-    fontSize: 28,
-    letterSpacing: 1.5,
-    marginTop: 2,
+  bookNameTitle: {
+    fontSize: 26,
+    letterSpacing: 0.5,
   },
   chapterSubtitle: {
     fontSize: 15,
   },
-  sacredOrnamentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginVertical: 6,
-    width: 140,
-  },
-  ornamentLine: {
-    flex: 1,
+  sacredDivider: {
+    width: 48,
     height: 1,
+    marginTop: 10,
   },
-  ornamentSymbol: {
-    fontSize: 14,
-  },
-  readingTimePill: {
+  bottomNavBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 4,
-  },
-  readingTimeText: {
-    fontSize: 12,
-  },
-  footerNav: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 30,
-    gap: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderTopWidth: 1,
   },
-  navButton: {
-    flex: 1,
+  bottomNavBtn: {
     flexDirection: 'row',
-    minHeight: 44,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
   },
-  navButtonDisabled: {
+  bottomNavBtnText: {
+    fontSize: 13,
+  },
+  disabledNavBtn: {
     opacity: 0.35,
   },
-  navButtonText: {
-    fontSize: 15,
+  bottomNavCenterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  bottomNavCenterText: {
+    fontSize: 12,
   },
 });
